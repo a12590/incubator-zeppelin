@@ -38,6 +38,7 @@ import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.NotebookRepoSync;
 import org.apache.zeppelin.rest.InterpreterRestApi;
 import org.apache.zeppelin.rest.NotebookRestApi;
+import org.apache.zeppelin.rest.ParagraphRestApi;
 import org.apache.zeppelin.rest.ZeppelinRestApi;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.socket.NotebookServer;
@@ -273,6 +274,9 @@ public class ZeppelinServer extends Application {
 
     NotebookRestApi notebookApi = new NotebookRestApi(notebook, notebookServer);
     singletons.add(notebookApi);
+
+    ParagraphRestApi paragraphApi = new ParagraphRestApi(notebook, notebookServer);
+    singletons.add(paragraphApi);
 
     InterpreterRestApi interpreterApi = new InterpreterRestApi(replFactory);
     singletons.add(interpreterApi);

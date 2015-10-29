@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response.Status;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Notebook;
+import org.apache.zeppelin.notebook.Paragraph;
 import org.apache.zeppelin.rest.message.InterpreterSettingListForNoteBind;
 import org.apache.zeppelin.rest.message.NewInterpreterSettingRequest;
 import org.apache.zeppelin.rest.message.NewNotebookRequest;
@@ -120,6 +121,21 @@ public class NotebookRestApi {
     return new JsonResponse(Status.OK, "", notebook.getAllNotes() ).build();
   }
 
+  @GET
+  @Path("{notebookId}")
+  public Response getNotebook(@PathParam("notebookId") String notebookId) throws IOException {
+    Note note = notebook.getNote(notebookId);
+    return new JsonResponse(Status.OK, "", note ).build();
+  }
+
+  @POST
+  @Path("run/{notebookId}")
+  public Response runNotebook(@PathParam("notebookId") String notebookId) throws IOException {
+    Note note = notebook.getNote(notebookId);
+    note.runAll();
+    return new JsonResponse(Status.ACCEPTED, "", note.getId()).build();
+  }
+
   /**
    * Create new note REST API
    * @param message - JSON with new note name
@@ -133,7 +149,7 @@ public class NotebookRestApi {
     NewNotebookRequest request = gson.fromJson(message,
         NewNotebookRequest.class);
     Note note = notebook.createNote();
-    note.addParagraph(); // it's an empty note. so add one paragraph
+    Paragraph paragraph = note.addParagraph(); // it's an empty note. so add one paragraph
     String noteName = request.getName();
     if (noteName.isEmpty()) {
       noteName = "Note " + note.getId();
