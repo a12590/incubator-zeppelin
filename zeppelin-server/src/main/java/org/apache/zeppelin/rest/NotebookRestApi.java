@@ -129,7 +129,7 @@ public class NotebookRestApi {
   }
 
   @POST
-  @Path("run/{notebookId}")
+  @Path("{notebookId}/run")
   public Response runNotebook(@PathParam("notebookId") String notebookId) throws IOException {
     Note note = notebook.getNote(notebookId);
     note.runAll();
