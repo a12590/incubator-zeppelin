@@ -48,6 +48,7 @@ public class Note implements Serializable, JobListener {
   List<Paragraph> paragraphs = new LinkedList<Paragraph>();
   private String name;
   private String id;
+  private String owner = "anonymous";
 
   Map<String, List<AngularObject>> angularObjects = new HashMap<String, List<AngularObject>>();
 
@@ -75,10 +76,11 @@ public class Note implements Serializable, JobListener {
 
   public Note(NotebookRepo repo,
       NoteInterpreterLoader replLoader,
-      JobListenerFactory jobListenerFactory) {
+      JobListenerFactory jobListenerFactory, String owner) {
     this.repo = repo;
     this.replLoader = replLoader;
     this.jobListenerFactory = jobListenerFactory;
+    this.owner = owner;
     generateId();
   }
 
@@ -93,6 +95,10 @@ public class Note implements Serializable, JobListener {
   public String getId() {
     return id;
   }
+
+  public String getOwner() { return this.owner; }
+
+  public String setOwner() { return this.owner; }
 
   public String getName() {
     return name;
@@ -320,7 +326,7 @@ public class Note implements Serializable, JobListener {
   }
 
   public void unpersist() throws IOException {
-    repo.remove(id());
+    repo.remove(id(), this.owner);
   }
 
   public Map<String, Object> getConfig() {
