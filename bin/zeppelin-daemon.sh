@@ -54,6 +54,15 @@ ZEPPELIN_PID="${ZEPPELIN_PID_DIR}/zeppelin-${ZEPPELIN_IDENT_STRING}-${HOSTNAME}.
 ZEPPELIN_MAIN=org.apache.zeppelin.server.ZeppelinServer
 JAVA_OPTS+=" -Dzeppelin.log.file=${ZEPPELIN_LOGFILE}"
 
+# Predictive Service Parameters
+PREDICTIVE_SERVICE_PROTOCOL="http"
+PREDICTIVE_SERVICE_HOST="ec2-52-89-133-37.us-west-2.compute.amazonaws.com"
+# PREDICTIVE_SERVICE_HOST="localhost"
+PREDICTIVE_SERVICE_PORT="8080"
+JAVA_OPTS+=" -DPREDICTIVE_SERVICE_PROTOCOL=${PREDICTIVE_SERVICE_PROTOCOL}"
+JAVA_OPTS+=" -DPREDICTIVE_SERVICE_HOST=${PREDICTIVE_SERVICE_HOST}"
+JAVA_OPTS+=" -DPREDICTIVE_SERVICE_PORT=${PREDICTIVE_SERVICE_PORT}"
+
 # construct classpath
 if [[ -d "${ZEPPELIN_HOME}/zeppelin-interpreter/target/classes" ]]; then
   ZEPPELIN_CLASSPATH+=":${ZEPPELIN_HOME}/zeppelin-interpreter/target/classes"

@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
+
+import org.apache.zeppelin.acl.NotebookACLUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
@@ -102,7 +104,7 @@ public class NotebookServer extends WebSocketServlet implements
       /** Lets be elegant here */
       switch (messagereceived.op) {
           case LIST_NOTES:
-            broadcastNoteList();
+            broadcastNoteList(conn);
             break;
           case GET_HOME_NOTE:
             sendHomeNote(conn, notebook);
@@ -150,7 +152,7 @@ public class NotebookServer extends WebSocketServlet implements
             angularObjectUpdated(conn, notebook, messagereceived);
             break;
           default:
-            broadcastNoteList();
+            broadcastNoteList(conn);
             break;
       }
     } catch (Exception e) {
@@ -277,6 +279,35 @@ public class NotebookServer extends WebSocketServlet implements
     broadcast(note.id(), new Message(OP.NOTE).put("note", note));
   }
 
+  public void broadcastNoteList(NotebookSocket conn) {
+    Notebook notebook = notebook();
+
+    ZeppelinConfiguration conf = notebook.getConf();
+    String homescreenNotebookId = conf.getString(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
+    boolean hideHomeScreenNotebookFromList = conf
+        .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
+
+    List<String> notebooks = NotebookACLUtils.getNotebooks(conn.getRequest());
+
+    List<Note> notes = notebook.getAllNotes();
+    List<Map<String, String>> notesInfo = new LinkedList<>();
+    for (Note note : notes) {
+      Map<String, String> info = new HashMap<>();
+
+      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
+        continue;
+      }
+
+      if (notebooks.contains(note.id())) {
+        info.put("id", note.id());
+        info.put("name", note.getName());
+        notesInfo.add(info);
+      }
+    }
+
+    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
+  }
+
   public void broadcastNoteList() {
     Notebook notebook = notebook();
 
@@ -309,8 +340,9 @@ public class NotebookServer extends WebSocketServlet implements
       return;
     }
 
+    List<String> notebooks = NotebookACLUtils.getNotebooks(conn.getRequest());
     Note note = notebook.getNote(noteId);
-    if (note != null) {
+    if (notebooks.contains(noteId) && note != null) {
       addConnectionToNote(note.id(), conn);
       conn.send(serializeMessage(new Message(OP.NOTE).put("note", note)));
       sendAllAngularObjects(note, conn);
@@ -425,7 +457,7 @@ public class NotebookServer extends WebSocketServlet implements
     note.persist();
     broadcast(note.id(), new Message(OP.PARAGRAPH).put("paragraph", p));
   }
-  
+
   private void cloneNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
       throws IOException, CloneNotSupportedException {
     String noteId = getOpenNoteId(conn);

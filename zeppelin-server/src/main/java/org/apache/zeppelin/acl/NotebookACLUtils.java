@@ -1,0 +1,62 @@
+package org.apache.zeppelin.acl;
+
+import static org.apache.zeppelin.acl.Constants.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.google.gson.Gson;
+
+/**
+ * Utility class to get the notebooks from Predictive Service REST API
+ */
+public class NotebookACLUtils {
+
+  public static List<String> getNotebooks(HttpServletRequest request) {
+    List<Note> noteList = null;
+    System.out.println("AuthHeader : " + request.getHeader(HEADER_AUTH));
+    System.out.println("InstanceURL : " + request.getHeader(HEADER_INSTANCE_URL));
+
+    try {
+      String jsonResponse = new HTTPHelper().get(getPredictiveServiceURL(),
+              request.getHeader(HEADER_AUTH),
+              request.getHeader(HEADER_INSTANCE_URL));
+      Notebooks notebooks = new Gson().fromJson(jsonResponse, Notebooks.class);
+      noteList = notebooks.getNotebooks();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    List<String> notebookKeys = new ArrayList<>();
+    if (noteList != null && !noteList.isEmpty()) {
+      for (Note note : noteList) {
+        notebookKeys.add(note.getId());
+      }
+    }
+
+    System.out.println("Allowed notebooks " + notebookKeys);
+    return notebookKeys;
+  }
+
+  private static String getPredictiveServiceURL() {
+    String predSerProtocol = System.getProperty(KEY_PREDICTIVE_SERVICE_PROTOCOL);
+    String predSerHost = System.getProperty(KEY_PREDICTIVE_SERVICE_HOST);
+    String predSerPort = System.getProperty(KEY_PREDICTIVE_SERVICE_PORT);
+
+    StringBuilder predServiceURL = new StringBuilder();
+    predServiceURL.append(predSerProtocol);
+    predServiceURL.append(STR_COLON_SLASH_SLASH);
+    predServiceURL.append(predSerHost);
+    predServiceURL.append(STR_COLON);
+    predServiceURL.append(predSerPort);
+
+    predServiceURL.append("/");
+    predServiceURL.append(PREDICTIVE_SERVICE_APP_PATH);
+
+    System.out.println("predServiceURL : " + predServiceURL);
+    return predServiceURL.toString();
+  }
+
+}
