@@ -20,7 +20,8 @@ public class SFCookie {
     System.out.println("Salesforce Session Id from " + COOKIE_SID + " cookie " + sfSessionId);
     if (sfSessionId == null) {
       sfSessionId = cookies.get(COOKIE_SF_SESSION_ID);
-      System.out.println("Salesforce Session Id from " + COOKIE_SF_SESSION_ID + " cookie " + sfSessionId);
+      System.out.println("Salesforce Session Id from " +
+              COOKIE_SF_SESSION_ID + " cookie " + sfSessionId);
     }
     return sfSessionId;
   }
