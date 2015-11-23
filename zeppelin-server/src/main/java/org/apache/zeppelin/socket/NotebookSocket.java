@@ -31,13 +31,15 @@ public class NotebookSocket implements WebSocket.OnTextMessage{
   private NotebookSocketListener listener;
   private HttpServletRequest request;
   private String protocol;
+  private String cookie;
 
 
   public NotebookSocket(HttpServletRequest req, String protocol,
-      NotebookSocketListener listener) {
+      NotebookSocketListener listener, String cookie) {
     this.listener = listener;
     this.request = req;
     this.protocol = protocol;
+    this.cookie = cookie;
   }
 
   @Override
@@ -55,8 +57,8 @@ public class NotebookSocket implements WebSocket.OnTextMessage{
   public void onMessage(String message) {
     listener.onMessage(this, message);
   }
-  
-  
+
+
   public HttpServletRequest getRequest() {
     return request;
   }
@@ -65,9 +67,13 @@ public class NotebookSocket implements WebSocket.OnTextMessage{
     return protocol;
   }
 
+  public String getCookie() {
+    return cookie;
+  }
+
   public void send(String serializeMessage) throws IOException {
     connection.sendMessage(serializeMessage);
   }
 
-  
+
 }

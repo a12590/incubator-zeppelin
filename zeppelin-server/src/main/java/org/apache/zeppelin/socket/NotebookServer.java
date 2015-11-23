@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 package org.apache.zeppelin.socket;
+import static org.apache.zeppelin.acl.Constants.*;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -83,13 +86,25 @@ public class NotebookServer extends WebSocketServlet implements
 
   @Override
   public WebSocket doWebSocketConnect(HttpServletRequest req, String protocol) {
-    return new NotebookSocket(req, protocol, this);
+    System.out.println("#################### doWebSocketConnect ##########################");
+    String cookie = req.getHeader("Cookie");
+    if (cookie != null) {
+      System.out.println("Cookie : " + cookie);
+    } else {
+      System.out.println("No cookie");
+    }
+    return new NotebookSocket(req, protocol, this, cookie);
   }
 
   @Override
   public void onOpen(NotebookSocket conn) {
     LOG.info("New connection from {} : {}", conn.getRequest().getRemoteAddr(),
         conn.getRequest().getRemotePort());
+    System.out.println("#################### OnOpen ##########################");
+    HttpServletRequest req = conn.getRequest();
+    String cookie = req.getHeader("Cookie");
+    System.out.println("Cookie : " + cookie);
+
     synchronized (connectedSockets) {
       connectedSockets.add(conn);
     }
@@ -287,7 +302,7 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    List<String> notebooks = NotebookACLUtils.getNotebooks(conn.getRequest());
+    List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
 
     List<Note> notes = notebook.getAllNotes();
     List<Map<String, String>> notesInfo = new LinkedList<>();
@@ -340,7 +355,7 @@ public class NotebookServer extends WebSocketServlet implements
       return;
     }
 
-    List<String> notebooks = NotebookACLUtils.getNotebooks(conn.getRequest());
+    List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
     Note note = notebook.getNote(noteId);
     if (notebooks.contains(noteId) && note != null) {
       addConnectionToNote(note.id(), conn);

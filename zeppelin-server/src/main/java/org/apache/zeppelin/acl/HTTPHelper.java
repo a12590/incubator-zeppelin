@@ -26,7 +26,7 @@ public class HTTPHelper {
     HttpGet httpGet = new HttpGet(url);
     httpGet.setConfig(getRequestConfig());
 
-    httpGet.addHeader(HEADER_AUTH, sessionId);
+    httpGet.addHeader(HEADER_AUTH, HEADER_AUTH_TOKEN + sessionId);
     httpGet.addHeader(HEADER_ACCEPT, HEADER_APPLICATION_JSON);
     httpGet.addHeader(HEADER_INSTANCE_URL, instanceURL);
 

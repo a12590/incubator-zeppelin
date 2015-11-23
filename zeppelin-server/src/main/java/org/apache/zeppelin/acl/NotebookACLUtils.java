@@ -5,7 +5,7 @@ import static org.apache.zeppelin.acl.Constants.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
+import org.apache.zeppelin.socket.NotebookSocket;
 
 import com.google.gson.Gson;
 
@@ -14,15 +14,17 @@ import com.google.gson.Gson;
  */
 public class NotebookACLUtils {
 
-  public static List<String> getNotebooks(HttpServletRequest request) {
+  public static List<String> getNotebooks(NotebookSocket socket) {
     List<Note> noteList = null;
-    System.out.println("AuthHeader : " + request.getHeader(HEADER_AUTH));
-    System.out.println("InstanceURL : " + request.getHeader(HEADER_INSTANCE_URL));
+
+    SFCookie sfCookie = new SFCookie(socket.getCookie());
+    System.out.println("AuthHeader : " + sfCookie.getSFSessionId());
+    System.out.println("InstanceURL : " + sfCookie.getSFInstanceURL());
 
     try {
       String jsonResponse = new HTTPHelper().get(getPredictiveServiceURL(),
-              request.getHeader(HEADER_AUTH),
-              request.getHeader(HEADER_INSTANCE_URL));
+              sfCookie.getSFSessionId(),
+              sfCookie.getSFInstanceURL());
       Notebooks notebooks = new Gson().fromJson(jsonResponse, Notebooks.class);
       noteList = notebooks.getNotebooks();
     } catch (Exception e) {
