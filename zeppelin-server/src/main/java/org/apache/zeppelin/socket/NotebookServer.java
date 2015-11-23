@@ -86,13 +86,9 @@ public class NotebookServer extends WebSocketServlet implements
 
   @Override
   public WebSocket doWebSocketConnect(HttpServletRequest req, String protocol) {
-    System.out.println("#################### doWebSocketConnect ##########################");
+    LOG.info("#################### doWebSocketConnect ##########################");
     String cookie = req.getHeader("Cookie");
-    if (cookie != null) {
-      System.out.println("Cookie : " + cookie);
-    } else {
-      System.out.println("No cookie");
-    }
+    LOG.info("Cookie : " + cookie);
     return new NotebookSocket(req, protocol, this, cookie);
   }
 
@@ -100,10 +96,10 @@ public class NotebookServer extends WebSocketServlet implements
   public void onOpen(NotebookSocket conn) {
     LOG.info("New connection from {} : {}", conn.getRequest().getRemoteAddr(),
         conn.getRequest().getRemotePort());
-    System.out.println("#################### OnOpen ##########################");
+    LOG.info("#################### OnOpen ##########################");
     HttpServletRequest req = conn.getRequest();
     String cookie = req.getHeader("Cookie");
-    System.out.println("Cookie : " + cookie);
+    LOG.info("Cookie : " + cookie);
 
     synchronized (connectedSockets) {
       connectedSockets.add(conn);

@@ -5,10 +5,15 @@ import static org.apache.zeppelin.acl.Constants.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Model class to read cookie and read the SF values from it
  */
 public class SFCookie {
+  private static final Logger LOG = LoggerFactory.getLogger(SFCookie.class);
+
   private Map<String, String> cookies = new HashMap<String, String>();
 
   public SFCookie(String rawCookie) {
@@ -17,10 +22,10 @@ public class SFCookie {
 
   public String getSFSessionId() {
     String sfSessionId = cookies.get(COOKIE_SID);
-    System.out.println("Salesforce Session Id from " + COOKIE_SID + " cookie " + sfSessionId);
+    LOG.info("Salesforce Session Id from " + COOKIE_SID + " cookie " + sfSessionId);
     if (sfSessionId == null) {
       sfSessionId = cookies.get(COOKIE_SF_SESSION_ID);
-      System.out.println("Salesforce Session Id from " +
+      LOG.info("Salesforce Session Id from " +
               COOKIE_SF_SESSION_ID + " cookie " + sfSessionId);
     }
     return sfSessionId;

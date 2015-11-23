@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.zeppelin.socket.NotebookSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
@@ -13,13 +15,14 @@ import com.google.gson.Gson;
  * Utility class to get the notebooks from Predictive Service REST API
  */
 public class NotebookACLUtils {
+  private static final Logger LOG = LoggerFactory.getLogger(NotebookACLUtils.class);
 
   public static List<String> getNotebooks(NotebookSocket socket) {
     List<Note> noteList = null;
 
     SFCookie sfCookie = new SFCookie(socket.getCookie());
-    System.out.println("AuthHeader : " + sfCookie.getSFSessionId());
-    System.out.println("InstanceURL : " + sfCookie.getSFInstanceURL());
+    LOG.info("AuthHeader : " + sfCookie.getSFSessionId());
+    LOG.info("InstanceURL : " + sfCookie.getSFInstanceURL());
 
     try {
       String jsonResponse = new HTTPHelper().get(getPredictiveServiceURL(),
@@ -38,7 +41,7 @@ public class NotebookACLUtils {
       }
     }
 
-    System.out.println("Allowed notebooks " + notebookKeys);
+    LOG.info("Allowed notebooks " + notebookKeys);
     return notebookKeys;
   }
 
@@ -57,7 +60,7 @@ public class NotebookACLUtils {
     predServiceURL.append("/");
     predServiceURL.append(PREDICTIVE_SERVICE_APP_PATH);
 
-    System.out.println("predServiceURL : " + predServiceURL);
+    LOG.info("predServiceURL : " + predServiceURL);
     return predServiceURL.toString();
   }
 
