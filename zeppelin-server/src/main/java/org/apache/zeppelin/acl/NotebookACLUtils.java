@@ -57,7 +57,7 @@ public class NotebookACLUtils {
     predServiceURL.append(STR_COLON);
     predServiceURL.append(predSerPort);
 
-    predServiceURL.append("/");
+    predServiceURL.append(STR_SLASH);
     predServiceURL.append(PREDICTIVE_SERVICE_APP_PATH);
 
     LOG.info("predServiceURL : " + predServiceURL);

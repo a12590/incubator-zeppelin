@@ -21,21 +21,15 @@ public class SFCookie {
   }
 
   public String getSFSessionId() {
-    String sfSessionId = cookies.get(COOKIE_SID);
-    LOG.info("Salesforce Session Id from " + COOKIE_SID + " cookie " + sfSessionId);
-    if (sfSessionId == null) {
-      sfSessionId = cookies.get(COOKIE_SF_SESSION_ID);
-      LOG.info("Salesforce Session Id from " +
-              COOKIE_SF_SESSION_ID + " cookie " + sfSessionId);
-    }
-    return sfSessionId;
+    return cookies.get(COOKIE_APEX_AUTH);
   }
 
   public String getSFInstanceURL() {
-    return cookies.get(COOKIE_SF_INSTANCE_URL);
+    return cookies.get(COOKIE_APEX_INSTANCE_URL);
   }
 
   private void parse(String rawCookie) {
+    LOG.debug("Cookies : " + rawCookie);
     if (rawCookie != null) {
       String[] rawCookieParams = rawCookie.split(STR_SEMI_COLON);
 
