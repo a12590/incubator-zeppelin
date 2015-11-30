@@ -327,21 +327,21 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    List<Note> notes = notebook.getAllNotes();
-    List<Map<String, String>> notesInfo = new LinkedList<>();
-    for (Note note : notes) {
-      Map<String, String> info = new HashMap<>();
-
-      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
-        continue;
-      }
-
-      info.put("id", note.id());
-      info.put("name", note.getName());
-      notesInfo.add(info);
-    }
-
-    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
+//    List<Note> notes = notebook.getAllNotes();
+//    List<Map<String, String>> notesInfo = new LinkedList<>();
+//    for (Note note : notes) {
+//      Map<String, String> info = new HashMap<>();
+//
+//      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
+//        continue;
+//      }
+//
+//      info.put("id", note.id());
+//      info.put("name", note.getName());
+//      notesInfo.add(info);
+//    }
+//
+//    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
   private void sendNote(NotebookSocket conn, Notebook notebook,

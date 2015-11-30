@@ -1,7 +1,7 @@
 package org.apache.zeppelin.acl;
 
 /**
- * An utility classs to hold constants
+ * An utility class to hold constants
  */
 public class Constants {
   public static final String KEY_PREDICTIVE_SERVICE_PROTOCOL = "PREDICTIVE_SERVICE_PROTOCOL";
