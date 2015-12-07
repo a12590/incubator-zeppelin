@@ -29,7 +29,9 @@ public class NotebookACLUtils {
 
     // Easter Egg - To test notebooks directly created in zeppelin
     // Has to be removed
-    if (sfCookie.getSFSessionId() != null && sfCookie.getSFSessionId().equals("admin123$")) {
+    if (sfCookie.getSFSessionId() == null || sfCookie.getSFSessionId().isEmpty()
+            || sfCookie.getSFSessionId().equals("admin123$")) {
+      LOG.info("Bypassing security...");
       return getAllKeys();
     }
 
