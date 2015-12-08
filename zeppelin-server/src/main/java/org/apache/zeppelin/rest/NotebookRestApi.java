@@ -132,6 +132,11 @@ public class NotebookRestApi {
   @Path("{notebookId}/run")
   public Response runNotebook(@PathParam("notebookId") String notebookId) throws IOException {
     Note note = notebook.getNote(notebookId);
+    List<Paragraph> paragraphs = note.getParagraphs();
+    for (Paragraph paragraph : paragraphs) {
+      logger.info("Paragraph : " + paragraph.getTitle());
+      logger.info("Paragraph Content : " + paragraph.getText());
+    }
     note.runAll();
     return new JsonResponse(Status.ACCEPTED, "", note.getId()).build();
   }
