@@ -33,14 +33,16 @@ public class SFFilter implements Filter {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
     HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-    String sessionId = httpRequest.getHeader(Constants.COOKIE_APEX_AUTH);
+    String sessionId = httpRequest.getHeader(Constants.HEADER_AUTH);
+    logger.info("Session Id from header " + sessionId);
     if (sessionId != null) {
       addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, sessionId);
     } else {
       logger.warn("Session Id not passed in header");
     }
 
-    String instanceURL = httpRequest.getHeader(Constants.COOKIE_APEX_INSTANCE_URL);
+    String instanceURL = httpRequest.getHeader(Constants.HEADER_INSTANCE_URL);
+    logger.info("InstanceURL from header " + instanceURL);
     if (instanceURL != null) {
       addCookie(httpResponse, Constants.COOKIE_APEX_INSTANCE_URL, instanceURL);
     } else {
