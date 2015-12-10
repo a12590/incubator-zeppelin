@@ -33,10 +33,10 @@ public class SFFilter implements Filter {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
     HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-    String sessionId = httpRequest.getHeader(Constants.HEADER_AUTH);
-    logger.info("Session Id from header " + sessionId);
-    if (sessionId != null) {
-      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, sessionId);
+    String authHeader = httpRequest.getHeader(Constants.HEADER_AUTH);
+    logger.info("Auth header " + authHeader);
+    if (authHeader != null) {
+      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, getSessionId(authHeader));
     } else {
       logger.warn("Session Id not passed in header");
     }
@@ -50,6 +50,17 @@ public class SFFilter implements Filter {
     }
 
     chain.doFilter(request, response);
+  }
+
+  private String getSessionId(String authHeader) {
+    String sessionId = "";
+
+    String[] authHeaderStrArr = authHeader.split(" ");
+    if (authHeaderStrArr.length == 2) {
+      sessionId = authHeaderStrArr[1];
+    }
+
+    return sessionId;
   }
 
   private void addCookie(HttpServletResponse httpResponse, String name, String value) {
