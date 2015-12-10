@@ -327,21 +327,21 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    List<Note> notes = notebook.getAllNotes();
-    List<Map<String, String>> notesInfo = new LinkedList<>();
-    for (Note note : notes) {
-      Map<String, String> info = new HashMap<>();
-
-      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
-        continue;
-      }
-
-      info.put("id", note.id());
-      info.put("name", note.getName());
-      notesInfo.add(info);
-    }
-
-    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
+//    List<Note> notes = notebook.getAllNotes();
+//    List<Map<String, String>> notesInfo = new LinkedList<>();
+//    for (Note note : notes) {
+//      Map<String, String> info = new HashMap<>();
+//
+//      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
+//        continue;
+//      }
+//
+//      info.put("id", note.id());
+//      info.put("name", note.getName());
+//      notesInfo.add(info);
+//    }
+//
+//    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
   private void sendNote(NotebookSocket conn, Notebook notebook,
@@ -377,7 +377,7 @@ public class NotebookServer extends WebSocketServlet implements
     }
   }
 
-  private void updateNote(WebSocket conn, Notebook notebook, Message fromMessage)
+  private void updateNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
       throws SchedulerException, IOException {
     String noteId = (String) fromMessage.get("id");
     String name = (String) fromMessage.get("name");
@@ -401,7 +401,7 @@ public class NotebookServer extends WebSocketServlet implements
 
       note.persist();
       broadcastNote(note);
-      broadcastNoteList();
+      broadcastNoteList(conn);
     }
   }
 
@@ -419,7 +419,9 @@ public class NotebookServer extends WebSocketServlet implements
 
     return cronUpdated;
   }
-  private void createNote(WebSocket conn, Notebook notebook, Message message) throws IOException {
+
+  private void createNote(NotebookSocket conn, Notebook notebook,
+      Message message) throws IOException {
     Note note = notebook.createNote();
     note.addParagraph(); // it's an empty note. so add one paragraph
     if (message != null) {
@@ -432,10 +434,10 @@ public class NotebookServer extends WebSocketServlet implements
 
     note.persist();
     broadcastNote(note);
-    broadcastNoteList();
+    broadcastNoteList(conn);
   }
 
-  private void removeNote(WebSocket conn, Notebook notebook, Message fromMessage)
+  private void removeNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
       throws IOException {
     String noteId = (String) fromMessage.get("id");
     if (noteId == null) {
@@ -445,7 +447,7 @@ public class NotebookServer extends WebSocketServlet implements
     Note note = notebook.getNote(noteId);
     notebook.removeNote(noteId);
     removeNote(noteId);
-    broadcastNoteList();
+    broadcastNoteList(conn);
   }
 
   private void updateParagraph(NotebookSocket conn, Notebook notebook,
@@ -475,7 +477,7 @@ public class NotebookServer extends WebSocketServlet implements
     String name = (String) fromMessage.get("name");
     Note newNote = notebook.cloneNote(noteId, name);
     broadcastNote(newNote);
-    broadcastNoteList();
+    broadcastNoteList(conn);
   }
 
   private void removeParagraph(NotebookSocket conn, Notebook notebook,

@@ -240,6 +240,9 @@ public class ZeppelinServer extends Application {
       // use packaged WAR
       webApp.setWar(warPath.getAbsolutePath());
     }
+    // Adding SF Filter
+    webApp.addFilter(new FilterHolder(SFFilter.class), "/*",
+            EnumSet.allOf(DispatcherType.class));
     // Explicit bind to root
     webApp.addServlet(
       new ServletHolder(new DefaultServlet()),
