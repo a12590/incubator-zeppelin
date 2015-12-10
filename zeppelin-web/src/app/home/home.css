@@ -228,7 +228,7 @@ a.navbar-brand:hover {
 }
 
 .zeppelin {
-  background-image: url('/assets/images/zepLogo.png');
+  background-image: url('/assets/images/springMLLogo.png');
   background-repeat: no-repeat;
   background-position: right;
   height: 380px;
@@ -236,7 +236,7 @@ a.navbar-brand:hover {
 }
 
 .zeppelin2 {
-  background-image: url('/assets/images/zepLogo.png');
+  background-image: url('/assets/images/springMLLogo.png');
   background-repeat: no-repeat;
   background-position: right;
   background-position-y: 12px;
