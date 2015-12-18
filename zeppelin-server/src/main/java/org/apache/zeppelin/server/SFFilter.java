@@ -1,6 +1,7 @@
 package org.apache.zeppelin.server;
 
 import java.io.IOException;
+import java.util.Enumeration;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,6 +33,21 @@ public class SFFilter implements Filter {
       throws IOException, ServletException {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
     HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+    Enumeration<String> headerNames = httpRequest.getHeaderNames();
+    if (headerNames != null) {
+      logger.info("Printing headers...");
+      logger.info("############################################################################");
+      while (headerNames.hasMoreElements()) {
+        String name = headerNames.nextElement();
+        logger.info("Header Name : " + name);
+        String value = httpRequest.getHeader(headerNames.nextElement());
+        logger.info("Header Value : " + value);
+      }
+      logger.info("############################################################################");
+    } else {
+      logger.info("No header has been passed");
+    }
 
     String authHeader = httpRequest.getHeader(Constants.HEADER_AUTH);
     logger.info("Auth header " + authHeader);
