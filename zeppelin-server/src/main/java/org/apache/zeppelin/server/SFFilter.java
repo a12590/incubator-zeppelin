@@ -41,12 +41,12 @@ public class SFFilter implements Filter {
       while (headerNames.hasMoreElements()) {
         String name = headerNames.nextElement();
         logger.info("Header Name : " + name);
-        String value = httpRequest.getHeader(headerNames.nextElement());
+        String value = httpRequest.getHeader(name);
         logger.info("Header Value : " + value);
       }
       logger.info("############################################################################");
     } else {
-      logger.info("No header has been passed");
+//      logger.info("No header has been passed");
     }
 
     String authHeader = httpRequest.getHeader(Constants.HEADER_AUTH);
