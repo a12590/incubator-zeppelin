@@ -1,6 +1,9 @@
 package org.apache.zeppelin.server;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Base64;
+import java.util.Base64.Decoder;
 import java.util.Enumeration;
 
 import javax.servlet.Filter;
@@ -34,49 +37,29 @@ public class SFFilter implements Filter {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
     HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-    Enumeration<String> headerNames = httpRequest.getHeaderNames();
-    if (headerNames != null) {
-      logger.info("Printing headers...");
-      logger.info("############################################################################");
-      while (headerNames.hasMoreElements()) {
-        String name = headerNames.nextElement();
-        logger.info("Header Name : " + name);
-        String value = httpRequest.getHeader(name);
-        logger.info("Header Value : " + value);
-      }
-      logger.info("############################################################################");
+    String sessionId = httpRequest.getParameter(Constants.URL_PARAM_SF_SESSION_ID);
+    logger.info("Salesforce Session Id" + sessionId);
+    if (sessionId != null) {
+      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, getSessionId(sessionId));
     } else {
-//      logger.info("No header has been passed");
+      logger.warn("Session Id not passed as URL Parameter");
     }
 
-    String authHeader = httpRequest.getHeader(Constants.HEADER_AUTH);
-    logger.info("Auth header " + authHeader);
-    if (authHeader != null) {
-      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, getSessionId(authHeader));
-    } else {
-      logger.warn("Session Id not passed in header");
-    }
-
-    String instanceURL = httpRequest.getHeader(Constants.HEADER_INSTANCE_URL);
-    logger.info("InstanceURL from header " + instanceURL);
+    String instanceURL = httpRequest.getParameter(Constants.URL_PARAM_SF_INSTANCE_URL);
+    logger.info("InstanceURL " + instanceURL);
     if (instanceURL != null) {
       addCookie(httpResponse, Constants.COOKIE_APEX_INSTANCE_URL, instanceURL);
     } else {
-      logger.warn("InstanceURL not passed in header");
+      logger.warn("InstanceURL not passed as URL Parameter");
     }
 
     chain.doFilter(request, response);
   }
 
-  private String getSessionId(String authHeader) {
-    String sessionId = "";
-
-    String[] authHeaderStrArr = authHeader.split(" ");
-    if (authHeaderStrArr.length == 2) {
-      sessionId = authHeaderStrArr[1];
-    }
-
-    return sessionId;
+  private String getSessionId(String encodedSessionId) {
+    Decoder decoder = Base64.getDecoder();
+    byte[] decodedValue = decoder.decode(encodedSessionId);
+    return new String(decodedValue, Charset.forName("UTF-8"));
   }
 
   private void addCookie(HttpServletResponse httpResponse, String name, String value) {
