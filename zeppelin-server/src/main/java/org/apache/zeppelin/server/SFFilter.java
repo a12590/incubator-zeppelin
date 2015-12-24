@@ -1,10 +1,11 @@
 package org.apache.zeppelin.server;
 
+import static org.apache.zeppelin.acl.Constants.*;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Base64;
 import java.util.Base64.Decoder;
-import java.util.Enumeration;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -53,7 +54,31 @@ public class SFFilter implements Filter {
       logger.warn("InstanceURL not passed as URL Parameter");
     }
 
+    String psUserURL = getPredServiceUserURL();
+    logger.info("Predictive Service User URL " + psUserURL);
+    if (psUserURL != null) {
+      addCookie(httpResponse, Constants.COOKIE_PS_USER_URL, psUserURL);
+    }
+
     chain.doFilter(request, response);
+  }
+
+  private String getPredServiceUserURL() {
+    String predSerProtocol = System.getProperty(KEY_PREDICTIVE_SERVICE_PROTOCOL);
+    String predSerHost = System.getProperty(KEY_PREDICTIVE_SERVICE_HOST);
+    String predSerPort = System.getProperty(KEY_PREDICTIVE_SERVICE_PORT);
+
+    StringBuilder predServiceUserURL = new StringBuilder();
+    predServiceUserURL.append(predSerProtocol);
+    predServiceUserURL.append(STR_COLON_SLASH_SLASH);
+    predServiceUserURL.append(predSerHost);
+    predServiceUserURL.append(STR_COLON);
+    predServiceUserURL.append(predSerPort);
+
+    predServiceUserURL.append(STR_SLASH);
+    predServiceUserURL.append(PREDICTIVE_SERVICE_USER_PATH);
+
+    return predServiceUserURL.toString();
   }
 
   private String getSessionId(String encodedSessionId) {

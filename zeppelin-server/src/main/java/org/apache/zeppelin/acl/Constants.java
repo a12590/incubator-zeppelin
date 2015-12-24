@@ -19,6 +19,7 @@ public class Constants {
 
   public static final String COOKIE_APEX_AUTH = "apex__Authorization";
   public static final String COOKIE_APEX_INSTANCE_URL = "apex__InstanceURL";
+  public static final String COOKIE_PS_USER_URL = "ps__userURL";
   public static final String COOKIE_SID = "sid";
 
   public static final String STR_COLON_SLASH_SLASH = "://";
@@ -30,6 +31,7 @@ public class Constants {
   public static final String STR_HTTPS_URL_PREFIX = "https://";
 
   public static final String PREDICTIVE_SERVICE_APP_PATH = "zeppelin/notebook";
+  public static final String PREDICTIVE_SERVICE_USER_PATH = "user";
 
   public static final int CONNECTION_TIMEOUT = 60000;
 }
