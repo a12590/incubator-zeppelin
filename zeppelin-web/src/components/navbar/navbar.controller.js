@@ -15,7 +15,7 @@
 
 'use strict';
 
-angular.module('zeppelinWebApp').controller('NavCtrl', function($scope, $rootScope, $routeParams, notebookListDataFactory, websocketMsgSrv, arrayOrderingSrv) {
+angular.module('zeppelinWebApp').controller('NavCtrl', function($scope, $rootScope, $routeParams, $cookieStore, notebookListDataFactory, websocketMsgSrv, arrayOrderingSrv) {
   /** Current list of notes (ids) */
 
   var vm = this;
@@ -42,6 +42,15 @@ angular.module('zeppelinWebApp').controller('NavCtrl', function($scope, $rootSco
     return ($routeParams.noteId === noteId);
   }
 
+  function isAdmin() {
+    //alert('Hello');
+    //alert($cookieStore.get('apex__Authorization'));
+    console.log('Hello');
+    console.log($cookieStore.get('apex__Authorization'));
+    return true;
+  }
+
+  vm.isAdmin = isAdmin();
   vm.loadNotes = loadNotes;
   vm.isActive = isActive;
 
