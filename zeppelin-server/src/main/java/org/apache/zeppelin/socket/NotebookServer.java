@@ -18,7 +18,6 @@ package org.apache.zeppelin.socket;
 import static org.apache.zeppelin.acl.Constants.*;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
@@ -30,11 +29,17 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.zeppelin.acl.NotebookACLUtils;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.display.AngularObjectRegistryListener;
+import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.notebook.JobListenerFactory;
@@ -46,41 +51,41 @@ import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.apache.zeppelin.server.ZeppelinServer;
 import org.apache.zeppelin.socket.Message.OP;
+import org.apache.zeppelin.ticket.TicketContainer;
 import org.apache.zeppelin.utils.SecurityUtils;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
+
 /**
  * Zeppelin websocket service.
  *
- * @author anthonycorbacho
  */
 public class NotebookServer extends WebSocketServlet implements
         NotebookSocketListener, JobListenerFactory, AngularObjectRegistryListener {
-  private static final Logger LOG = LoggerFactory
-          .getLogger(NotebookServer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NotebookServer.class);
   Gson gson = new Gson();
   final Map<String, List<NotebookSocket>> noteSocketMap = new HashMap<>();
-  final List<NotebookSocket> connectedSockets = new LinkedList<>();
+  final Queue<NotebookSocket> connectedSockets = new ConcurrentLinkedQueue<>();
 
   private Notebook notebook() {
     return ZeppelinServer.notebook;
   }
+
   @Override
   public boolean checkOrigin(HttpServletRequest request, String origin) {
-
     try {
       return SecurityUtils.isValidOrigin(origin, ZeppelinConfiguration.create());
     } catch (UnknownHostException e) {
-      e.printStackTrace();
+      LOG.error(e.toString(), e);
     } catch (URISyntaxException e) {
-      e.printStackTrace();
+      LOG.error(e.toString(), e);
     }
-
     return false;
   }
 
@@ -101,9 +106,7 @@ public class NotebookServer extends WebSocketServlet implements
     String cookie = req.getHeader("Cookie");
     LOG.info("Cookie : " + cookie);
 
-    synchronized (connectedSockets) {
-      connectedSockets.add(conn);
-    }
+    connectedSockets.add(conn);
   }
 
   @Override
@@ -111,11 +114,27 @@ public class NotebookServer extends WebSocketServlet implements
     Notebook notebook = notebook();
     try {
       Message messagereceived = deserializeMessage(msg);
-      LOG.info("RECEIVE << " + messagereceived.op);
+      LOG.debug("RECEIVE << " + messagereceived.op);
+      LOG.debug("RECEIVE PRINCIPAL << " + messagereceived.principal);
+      LOG.debug("RECEIVE TICKET << " + messagereceived.ticket);
+      String ticket = TicketContainer.instance.getTicket(messagereceived.principal);
+      if (ticket != null && !ticket.equals(messagereceived.ticket))
+        throw new Exception("Invalid ticket " + messagereceived.ticket + " != " + ticket);
+
+      ZeppelinConfiguration conf = ZeppelinConfiguration.create();
+      boolean allowAnonymous = conf.
+          getBoolean(ZeppelinConfiguration.ConfVars.ZEPPELIN_ANONYMOUS_ALLOWED);
+      if (!allowAnonymous && messagereceived.principal.equals("anonymous")) {
+        throw new Exception("Anonymous access not allowed ");
+      }
+
       /** Lets be elegant here */
       switch (messagereceived.op) {
           case LIST_NOTES:
             broadcastNoteList(conn);
+            break;
+          case RELOAD_NOTES_FROM_REPO:
+            broadcastReloadedNoteList();
             break;
           case GET_HOME_NOTE:
             sendHomeNote(conn, notebook);
@@ -131,6 +150,9 @@ public class NotebookServer extends WebSocketServlet implements
             break;
           case CLONE_NOTE:
             cloneNote(conn, notebook, messagereceived);
+            break;
+          case IMPORT_NOTE:
+            importNote(conn, notebook, messagereceived);
             break;
           case COMMIT_PARAGRAPH:
             updateParagraph(conn, notebook, messagereceived);
@@ -150,6 +172,9 @@ public class NotebookServer extends WebSocketServlet implements
           case PARAGRAPH_REMOVE:
             removeParagraph(conn, notebook, messagereceived);
             break;
+          case PARAGRAPH_CLEAR_OUTPUT:
+            clearParagraphOutput(conn, notebook, messagereceived);
+            break;
           case NOTE_UPDATE:
             updateNote(conn, notebook, messagereceived);
             break;
@@ -157,8 +182,7 @@ public class NotebookServer extends WebSocketServlet implements
             completion(conn, notebook, messagereceived);
             break;
           case PING:
-            pong();
-            break;
+            break; //do nothing
           case ANGULAR_OBJECT_UPDATED:
             angularObjectUpdated(conn, notebook, messagereceived);
             break;
@@ -176,12 +200,10 @@ public class NotebookServer extends WebSocketServlet implements
     LOG.info("Closed connection to {} : {}. ({}) {}", conn.getRequest()
         .getRemoteAddr(), conn.getRequest().getRemotePort(), code, reason);
     removeConnectionFromAllNote(conn);
-    synchronized (connectedSockets) {
-      connectedSockets.remove(conn);
-    }
+    connectedSockets.remove(conn);
   }
 
-  private Message deserializeMessage(String msg) {
+  protected Message deserializeMessage(String msg) {
     return gson.fromJson(msg, Message.class);
   }
 
@@ -263,7 +285,7 @@ public class NotebookServer extends WebSocketServlet implements
       if (socketLists == null || socketLists.size() == 0) {
         return;
       }
-      LOG.info("SEND >> " + m.op);
+      LOG.debug("SEND >> " + m.op);
       for (NotebookSocket conn : socketLists) {
         try {
           conn.send(serializeMessage(m));
@@ -274,9 +296,17 @@ public class NotebookServer extends WebSocketServlet implements
     }
   }
 
-  private void broadcastAll(Message m) {
-    synchronized (connectedSockets) {
-      for (NotebookSocket conn : connectedSockets) {
+  private void broadcastExcept(String noteId, Message m, NotebookSocket exclude) {
+    synchronized (noteSocketMap) {
+      List<NotebookSocket> socketLists = noteSocketMap.get(noteId);
+      if (socketLists == null || socketLists.size() == 0) {
+        return;
+      }
+      LOG.debug("SEND >> " + m.op);
+      for (NotebookSocket conn : socketLists) {
+        if (exclude.equals(conn)) {
+          continue;
+        }
         try {
           conn.send(serializeMessage(m));
         } catch (IOException e) {
@@ -286,8 +316,14 @@ public class NotebookServer extends WebSocketServlet implements
     }
   }
 
-  public void broadcastNote(Note note) {
-    broadcast(note.id(), new Message(OP.NOTE).put("note", note));
+  private void broadcastAll(Message m) {
+    for (NotebookSocket conn : connectedSockets) {
+      try {
+        conn.send(serializeMessage(m));
+      } catch (IOException e) {
+        LOG.error("socket error", e);
+      }
+    }
   }
 
   public void broadcastNoteList(NotebookSocket conn) {
@@ -297,6 +333,14 @@ public class NotebookServer extends WebSocketServlet implements
     String homescreenNotebookId = conf.getString(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
+
+    if (needsReload) {
+      try {
+        notebook.reloadAllNotes();
+      } catch (IOException e) {
+        LOG.error("Fail to reload notes from repository");
+      }
+    }
 
     List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
 
@@ -316,6 +360,53 @@ public class NotebookServer extends WebSocketServlet implements
       }
     }
 
+    return notesInfo;
+  }
+
+  public List<Map<String, String>> generateNotebooksInfo(boolean needsReload) {
+    Notebook notebook = notebook();
+
+    ZeppelinConfiguration conf = notebook.getConf();
+    String homescreenNotebookId = conf.getString(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
+    boolean hideHomeScreenNotebookFromList = conf
+        .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
+
+    if (needsReload) {
+      try {
+        notebook.reloadAllNotes();
+      } catch (IOException e) {
+        LOG.error("Fail to reload notes from repository");
+      }
+    }
+
+    List<Note> notes = notebook.getAllNotes();
+    List<Map<String, String>> notesInfo = new LinkedList<>();
+    for (Note note : notes) {
+      Map<String, String> info = new HashMap<>();
+
+      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
+        continue;
+      }
+
+      info.put("id", note.id());
+      info.put("name", note.getName());
+      notesInfo.add(info);
+    }
+
+    return notesInfo;
+  }
+
+  public void broadcastNote(Note note) {
+    broadcast(note.id(), new Message(OP.NOTE).put("note", note));
+  }
+
+  public void broadcastNoteList() {
+    List<Map<String, String>> notesInfo = generateNotebooksInfo(false);
+    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
+  }
+
+  public void broadcastReloadedNoteList() {
+    List<Map<String, String>> notesInfo = generateNotebooksInfo(true);
     broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
@@ -373,6 +464,7 @@ public class NotebookServer extends WebSocketServlet implements
       conn.send(serializeMessage(new Message(OP.NOTE).put("note", note)));
       sendAllAngularObjects(note, conn);
     } else {
+      removeConnectionFromAllNote(conn);
       conn.send(serializeMessage(new Message(OP.NOTE).put("note", null)));
     }
   }
@@ -420,8 +512,8 @@ public class NotebookServer extends WebSocketServlet implements
     return cronUpdated;
   }
 
-  private void createNote(NotebookSocket conn, Notebook notebook,
-      Message message) throws IOException {
+  private void createNote(NotebookSocket conn, Notebook notebook, Message message)
+      throws IOException {
     Note note = notebook.createNote();
     note.addParagraph(); // it's an empty note. so add one paragraph
     if (message != null) {
@@ -433,8 +525,11 @@ public class NotebookServer extends WebSocketServlet implements
     }
 
     note.persist();
-    broadcastNote(note);
-    broadcastNoteList(conn);
+//    broadcastNote(note);
+//    broadcastNoteList(conn);
+    addConnectionToNote(note.id(), (NotebookSocket) conn);
+    conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", note)));
+    broadcastNoteList();
   }
 
   private void removeNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
@@ -476,8 +571,69 @@ public class NotebookServer extends WebSocketServlet implements
     String noteId = getOpenNoteId(conn);
     String name = (String) fromMessage.get("name");
     Note newNote = notebook.cloneNote(noteId, name);
+<<<<<<< HEAD
     broadcastNote(newNote);
     broadcastNoteList(conn);
+=======
+    addConnectionToNote(newNote.id(), (NotebookSocket) conn);
+    conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
+    broadcastNoteList();
+>>>>>>> 11d25be8c3d13f55763609a4ccb93394771a6971
+  }
+
+  protected Note importNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
+      throws IOException {
+
+    Note note = notebook.createNote();
+    if (fromMessage != null) {
+      String noteName = (String) ((Map) fromMessage.get("notebook")).get("name");
+      if (noteName == null || noteName.isEmpty()) {
+        noteName = "Note " + note.getId();
+      }
+      note.setName(noteName);
+      ArrayList<Map> paragraphs = ((Map<String, ArrayList>) fromMessage.get("notebook"))
+          .get("paragraphs");
+      if (paragraphs.size() > 0) {
+        for (Map paragraph : paragraphs) {
+          try {
+            Paragraph p = note.addParagraph();
+            String text = (String) paragraph.get("text");
+            p.setText(text);
+            p.setTitle((String) paragraph.get("title"));
+            Map<String, Object> params = (Map<String, Object>) ((Map) paragraph
+                .get("settings")).get("params");
+            Map<String, Input> forms = (Map<String, Input>) ((Map) paragraph
+                .get("settings")).get("forms");
+            if (params != null) {
+              p.settings.setParams(params);
+            }
+            if (forms != null) {
+              p.settings.setForms(forms);
+            }
+            Map<String, Object> result = (Map) paragraph.get("result");
+            if (result != null) {
+              InterpreterResult.Code code = InterpreterResult.Code
+                  .valueOf((String) result.get("code"));
+              InterpreterResult.Type type = InterpreterResult.Type
+                  .valueOf((String) result.get("type"));
+              String msg = (String) result.get("msg");
+              p.setReturn(new InterpreterResult(code, type, msg), null);
+            }
+
+            Map<String, Object> config = (Map<String, Object>) paragraph
+                .get("config");
+            p.setConfig(config);
+          } catch (Exception e) {
+            LOG.error("Exception while setting parameter in paragraph", e);
+          }
+        }
+      }
+    }
+
+    note.persist();
+    broadcastNote(note);
+    broadcastNoteList();
+    return note;
   }
 
   private void removeParagraph(NotebookSocket conn, Notebook notebook,
@@ -494,6 +650,18 @@ public class NotebookServer extends WebSocketServlet implements
       note.persist();
       broadcastNote(note);
     }
+  }
+
+  private void clearParagraphOutput(NotebookSocket conn, Notebook notebook,
+      Message fromMessage) throws IOException {
+    final String paragraphId = (String) fromMessage.get("id");
+    if (paragraphId == null) {
+      return;
+    }
+
+    final Note note = notebook.getNote(getOpenNoteId(conn));
+    note.clearParagraphOutput(paragraphId);
+    broadcastNote(note);
   }
 
   private void completion(NotebookSocket conn, Notebook notebook,
@@ -520,7 +688,7 @@ public class NotebookServer extends WebSocketServlet implements
    * @param notebook the notebook.
    * @param fromMessage the message.
    */
-  private void angularObjectUpdated(WebSocket conn, Notebook notebook,
+  private void angularObjectUpdated(NotebookSocket conn, Notebook notebook,
       Message fromMessage) {
     String noteId = (String) fromMessage.get("noteId");
     String interpreterGroupId = (String) fromMessage.get("interpreterGroupId");
@@ -574,20 +742,22 @@ public class NotebookServer extends WebSocketServlet implements
           if (interpreterGroupId.equals(setting.getInterpreterGroup().getId())) {
             AngularObjectRegistry angularObjectRegistry = setting
                 .getInterpreterGroup().getAngularObjectRegistry();
-            this.broadcast(
+            this.broadcastExcept(
                 n.id(),
                 new Message(OP.ANGULAR_OBJECT_UPDATE).put("angularObject", ao)
                     .put("interpreterGroupId", interpreterGroupId)
-                    .put("noteId", n.id()));
+                    .put("noteId", n.id()),
+                conn);
           }
         }
       }
     } else { // broadcast to all web session for the note
-      this.broadcast(
+      this.broadcastExcept(
           note.id(),
           new Message(OP.ANGULAR_OBJECT_UPDATE).put("angularObject", ao)
               .put("interpreterGroupId", interpreterGroupId)
-              .put("noteId", note.id()));
+              .put("noteId", note.id()),
+          conn);
     }
   }
 
@@ -674,6 +844,7 @@ public class NotebookServer extends WebSocketServlet implements
   public static class ParagraphJobListener implements JobListener {
     private NotebookServer notebookServer;
     private Note note;
+
     public ParagraphJobListener(NotebookServer notebookServer, Note note) {
       this.notebookServer = notebookServer;
       this.note = note;
@@ -704,7 +875,7 @@ public class NotebookServer extends WebSocketServlet implements
         try {
           note.persist();
         } catch (IOException e) {
-          e.printStackTrace();
+          LOG.error(e.toString(), e);
         }
       }
       notebookServer.broadcastNote(note);
@@ -714,8 +885,6 @@ public class NotebookServer extends WebSocketServlet implements
   @Override
   public JobListener getParagraphJobListener(Note note) {
     return new ParagraphJobListener(this, note);
-  }
-  private void pong() {
   }
 
   private void sendAllAngularObjects(Note note, NotebookSocket conn) throws IOException {
