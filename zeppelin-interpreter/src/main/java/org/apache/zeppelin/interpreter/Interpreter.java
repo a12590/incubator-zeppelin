@@ -121,14 +121,17 @@ public abstract class Interpreter {
    * Called when interpreter is no longer used.
    */
   public void destroy() {
-    getScheduler().stop();
+    Scheduler scheduler = getScheduler();
+    if (scheduler != null) {
+      scheduler.stop();
+    }
   }
 
 
 
 
 
-  static Logger logger = LoggerFactory.getLogger(Interpreter.class);
+  public static Logger logger = LoggerFactory.getLogger(Interpreter.class);
   private InterpreterGroup interpreterGroup;
   private URL [] classloaderUrls;
   protected Properties property;

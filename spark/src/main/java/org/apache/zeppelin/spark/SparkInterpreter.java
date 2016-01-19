@@ -55,8 +55,8 @@ import org.apache.zeppelin.interpreter.InterpreterUtils;
 import org.apache.zeppelin.interpreter.WrappedInterpreter;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
-import org.apache.zeppelin.spark.dep.DependencyContext;
-import org.apache.zeppelin.spark.dep.DependencyResolver;
+import org.apache.zeppelin.spark.dep.SparkDependencyContext;
+import org.apache.zeppelin.spark.dep.SparkDependencyResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
  *
  */
 public class SparkInterpreter extends Interpreter {
-  Logger logger = LoggerFactory.getLogger(SparkInterpreter.class);
+  public static Logger logger = LoggerFactory.getLogger(SparkInterpreter.class);
 
   static {
     Interpreter.register(
@@ -100,10 +100,6 @@ public class SparkInterpreter extends Interpreter {
             .add("spark.cores.max",
                 getSystemDefault(null, "spark.cores.max", ""),
                 "Total number of cores to use. Empty value uses all available core.")
-            .add("spark.yarn.jar",
-                getSystemDefault("SPARK_YARN_JAR", "spark.yarn.jar", ""),
-                "The location of the Spark jar file. If you use yarn as a cluster, "
-                + "we should set this value")
             .add("zeppelin.spark.useHiveContext",
                 getSystemDefault("ZEPPELIN_SPARK_USEHIVECONTEXT",
                     "zeppelin.spark.useHiveContext", "true"),
@@ -121,7 +117,7 @@ public class SparkInterpreter extends Interpreter {
   private SparkContext sc;
   private ByteArrayOutputStream out;
   private SQLContext sqlc;
-  private DependencyResolver dep;
+  private SparkDependencyResolver dep;
   private SparkJLineCompletion completor;
 
   private JobProgressListener sparkListener;
@@ -190,7 +186,7 @@ public class SparkInterpreter extends Interpreter {
       }
     } catch (NoSuchMethodException | SecurityException | IllegalAccessException
         | IllegalArgumentException | InvocationTargetException e) {
-      e.printStackTrace();
+      logger.error(e.toString(), e);
       return null;
     }
     return pl;
@@ -226,9 +222,9 @@ public class SparkInterpreter extends Interpreter {
     return sqlc;
   }
 
-  public DependencyResolver getDependencyResolver() {
+  public SparkDependencyResolver getDependencyResolver() {
     if (dep == null) {
-      dep = new DependencyResolver(intp,
+      dep = new SparkDependencyResolver(intp,
                                    sc,
                                    getProperty("zeppelin.dep.localrepo"),
                                    getProperty("zeppelin.dep.additionalRemoteRepository"));
@@ -310,7 +306,7 @@ public class SparkInterpreter extends Interpreter {
     }
 
     //TODO(jongyoul): Move these codes into PySparkInterpreter.java
-    String pysparkBasePath = getSystemDefault("SPARK_HOME", "spark.home", null);
+    String pysparkBasePath = getSystemDefault("SPARK_HOME", null, null);
     File pysparkPath;
     if (null == pysparkBasePath) {
       pysparkBasePath = getSystemDefault("ZEPPELIN_HOME", "zeppelin.home", "../");
@@ -321,7 +317,8 @@ public class SparkInterpreter extends Interpreter {
           "python" + File.separator + "lib");
     }
 
-    String[] pythonLibs = new String[]{"pyspark.zip", "py4j-0.8.2.1-src.zip"};
+    //Only one of py4j-0.9-src.zip and py4j-0.8.2.1-src.zip should exist
+    String[] pythonLibs = new String[]{"pyspark.zip", "py4j-0.9-src.zip", "py4j-0.8.2.1-src.zip"};
     ArrayList<String> pythonLibUris = new ArrayList<>();
     for (String lib : pythonLibs) {
       File libFile = new File(pysparkPath, lib);
@@ -338,6 +335,10 @@ public class SparkInterpreter extends Interpreter {
       conf.set("spark.submit.pyArchives", Joiner.on(":").join(pythonLibs));
     }
 
+    // Distributes needed libraries to workers.
+    if (getProperty("master").equals("yarn-client")) {
+      conf.set("spark.yarn.isPython", "true");
+    }
 
     SparkContext sparkContext = new SparkContext(conf);
     return sparkContext;
@@ -426,7 +427,7 @@ public class SparkInterpreter extends Interpreter {
     // add dependency from DepInterpreter
     DepInterpreter depInterpreter = getDepInterpreter();
     if (depInterpreter != null) {
-      DependencyContext depc = depInterpreter.getDependencyContext();
+      SparkDependencyContext depc = depInterpreter.getDependencyContext();
       if (depc != null) {
         List<File> files = depc.getFiles();
         if (files != null) {
@@ -535,7 +536,7 @@ public class SparkInterpreter extends Interpreter {
 
     // add jar
     if (depInterpreter != null) {
-      DependencyContext depc = depInterpreter.getDependencyContext();
+      SparkDependencyContext depc = depInterpreter.getDependencyContext();
       if (depc != null) {
         List<File> files = depc.getFilesDist();
         if (files != null) {
@@ -584,9 +585,58 @@ public class SparkInterpreter extends Interpreter {
 
   @Override
   public List<String> completion(String buf, int cursor) {
+    if (buf.length() < cursor) {
+      cursor = buf.length();
+    }
+    String completionText = getCompletionTargetString(buf, cursor);
+    if (completionText == null) {
+      completionText = "";
+      cursor = completionText.length();
+    }
     ScalaCompleter c = completor.completer();
-    Candidates ret = c.complete(buf, cursor);
+    Candidates ret = c.complete(completionText, cursor);
     return scala.collection.JavaConversions.asJavaList(ret.candidates());
+  }
+
+  private String getCompletionTargetString(String text, int cursor) {
+    String[] completionSeqCharaters = {" ", "\n", "\t"};
+    int completionEndPosition = cursor;
+    int completionStartPosition = cursor;
+    int indexOfReverseSeqPostion = cursor;
+
+    String resultCompletionText = "";
+    String completionScriptText = "";
+    try {
+      completionScriptText = text.substring(0, cursor);
+    }
+    catch (Exception e) {
+      logger.error(e.toString());
+      return null;
+    }
+    completionEndPosition = completionScriptText.length();
+
+    String tempReverseCompletionText = new StringBuilder(completionScriptText).reverse().toString();
+
+    for (String seqCharacter : completionSeqCharaters) {
+      indexOfReverseSeqPostion = tempReverseCompletionText.indexOf(seqCharacter);
+
+      if (indexOfReverseSeqPostion < completionStartPosition && indexOfReverseSeqPostion > 0) {
+        completionStartPosition = indexOfReverseSeqPostion;
+      }
+
+    }
+
+    if (completionStartPosition == completionEndPosition) {
+      completionStartPosition = 0;
+    }
+    else
+    {
+      completionStartPosition = completionEndPosition - completionStartPosition;
+    }
+    resultCompletionText = completionScriptText.substring(
+            completionStartPosition , completionEndPosition);
+
+    return resultCompletionText;
   }
 
   public Object getValue(String name) {
@@ -609,6 +659,11 @@ public class SparkInterpreter extends Interpreter {
    */
   @Override
   public InterpreterResult interpret(String line, InterpreterContext context) {
+    if (sparkVersion.isUnsupportedVersion()) {
+      return new InterpreterResult(Code.ERROR, "Spark " + sparkVersion.toString()
+          + " is not supported");
+    }
+
     z.setInterpreterContext(context);
     if (line == null || line.trim().length() == 0) {
       return new InterpreterResult(Code.SUCCESS);
