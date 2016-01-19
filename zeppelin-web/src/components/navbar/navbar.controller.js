@@ -59,7 +59,7 @@ angular.module('zeppelinWebApp').controller('NavCtrl', function($scope, $rootSco
     //alert('Hello');
     //alert($cookieStore.get('apex__Authorization'));
     console.log('Hello');
-    console.log($cookieStore.get('apex__Authorization'));
+    //console.log($cookieStore.get('apex__Authorization'));
     return true;
   }
 

@@ -285,7 +285,7 @@ public class ZeppelinServer extends Application {
     NotebookRestApi notebookApi = new NotebookRestApi(notebook, notebookWsServer, notebookIndex);
     singletons.add(notebookApi);
 
-    ParagraphRestApi paragraphApi = new ParagraphRestApi(notebook, notebookServer);
+    ParagraphRestApi paragraphApi = new ParagraphRestApi(notebook, notebookWsServer);
     singletons.add(paragraphApi);
 
     InterpreterRestApi interpreterApi = new InterpreterRestApi(replFactory);

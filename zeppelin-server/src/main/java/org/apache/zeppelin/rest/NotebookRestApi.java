@@ -146,21 +146,14 @@ public class NotebookRestApi {
     return new JsonResponse<>(Status.OK, "", note).build();
   }
 
-  @GET
-  @Path("{notebookId}")
-  public Response getNotebook(@PathParam("notebookId") String notebookId) throws IOException {
-    Note note = notebook.getNote(notebookId);
-    return new JsonResponse(Status.OK, "", note ).build();
-  }
-
   @POST
   @Path("{notebookId}/run")
   public Response runNotebook(@PathParam("notebookId") String notebookId) throws IOException {
     Note note = notebook.getNote(notebookId);
     List<Paragraph> paragraphs = note.getParagraphs();
     for (Paragraph paragraph : paragraphs) {
-      logger.info("Paragraph : " + paragraph.getTitle());
-      logger.info("Paragraph Content : " + paragraph.getText());
+      LOG.info("Paragraph : " + paragraph.getTitle());
+      LOG.info("Paragraph Content : " + paragraph.getText());
     }
     note.runAll();
     return new JsonResponse(Status.ACCEPTED, "", note.getId()).build();
@@ -184,7 +177,8 @@ public class NotebookRestApi {
       for (NewParagraphRequest paragraphRequest : initialParagraphs) {
         Paragraph p = note.addParagraph();
         p.setTitle(paragraphRequest.getTitle());
-        p.setText(paragraphRequest.getText());
+//        p.setText(paragraphRequest.getText());
+        p.setText(paragraphRequest.getContent());
       }
     }
     note.addParagraph(); // add one paragraph to the last
@@ -258,15 +252,16 @@ public class NotebookRestApi {
 
     NewParagraphRequest request = gson.fromJson(message, NewParagraphRequest.class);
 
-    Paragraph p;
-    Double indexDouble = request.getIndex();
-    if (indexDouble == null) {
-      p = note.addParagraph();
-    } else {
-      p = note.insertParagraph(indexDouble.intValue());
-    }
+    Paragraph p = note.addParagraph();
+//    Double indexDouble = request.getIndex();
+//    if (indexDouble == null) {
+//      p = note.addParagraph();
+//    } else {
+//      p = note.insertParagraph(indexDouble.intValue());
+//    }
     p.setTitle(request.getTitle());
-    p.setText(request.getText());
+//    p.setText(request.getText());
+    p.setText(request.getContent());
 
     note.persist();
     notebookServer.broadcastNote(note);

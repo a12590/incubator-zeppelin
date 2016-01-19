@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 package org.apache.zeppelin.socket;
-import static org.apache.zeppelin.acl.Constants.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.zeppelin.acl.NotebookACLUtils;
-import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.zeppelin.acl.NotebookACLUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
@@ -334,14 +331,6 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    if (needsReload) {
-      try {
-        notebook.reloadAllNotes();
-      } catch (IOException e) {
-        LOG.error("Fail to reload notes from repository");
-      }
-    }
-
     List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
 
     List<Note> notes = notebook.getAllNotes();
@@ -360,8 +349,9 @@ public class NotebookServer extends WebSocketServlet implements
       }
     }
 
-    return notesInfo;
+    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
+
 
   public List<Map<String, String>> generateNotebooksInfo(boolean needsReload) {
     Notebook notebook = notebook();
@@ -408,31 +398,6 @@ public class NotebookServer extends WebSocketServlet implements
   public void broadcastReloadedNoteList() {
     List<Map<String, String>> notesInfo = generateNotebooksInfo(true);
     broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
-  }
-
-  public void broadcastNoteList() {
-    Notebook notebook = notebook();
-
-    ZeppelinConfiguration conf = notebook.getConf();
-    String homescreenNotebookId = conf.getString(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
-    boolean hideHomeScreenNotebookFromList = conf
-        .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
-
-//    List<Note> notes = notebook.getAllNotes();
-//    List<Map<String, String>> notesInfo = new LinkedList<>();
-//    for (Note note : notes) {
-//      Map<String, String> info = new HashMap<>();
-//
-//      if (hideHomeScreenNotebookFromList && note.id().equals(homescreenNotebookId)) {
-//        continue;
-//      }
-//
-//      info.put("id", note.id());
-//      info.put("name", note.getName());
-//      notesInfo.add(info);
-//    }
-//
-//    broadcastAll(new Message(OP.NOTES_INFO).put("notes", notesInfo));
   }
 
   private void sendNote(NotebookSocket conn, Notebook notebook,
@@ -571,14 +536,11 @@ public class NotebookServer extends WebSocketServlet implements
     String noteId = getOpenNoteId(conn);
     String name = (String) fromMessage.get("name");
     Note newNote = notebook.cloneNote(noteId, name);
-<<<<<<< HEAD
-    broadcastNote(newNote);
-    broadcastNoteList(conn);
-=======
+//    broadcastNote(newNote);
+//    broadcastNoteList(conn);
     addConnectionToNote(newNote.id(), (NotebookSocket) conn);
     conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
     broadcastNoteList();
->>>>>>> 11d25be8c3d13f55763609a4ccb93394771a6971
   }
 
   protected Note importNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
