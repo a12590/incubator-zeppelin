@@ -180,8 +180,8 @@ public class NotebookRestApi {
 //        p.setText(paragraphRequest.getText());
         p.setText(paragraphRequest.getContent());
       }
+      note.addParagraph(); // add one paragraph to the last
     }
-    note.addParagraph(); // add one paragraph to the last
     String noteName = request.getName();
     if (noteName.isEmpty()) {
       noteName = "Note " + note.getId();
