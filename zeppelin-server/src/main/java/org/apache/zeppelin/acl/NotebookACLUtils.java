@@ -29,11 +29,11 @@ public class NotebookACLUtils {
 
     // Easter Egg - To test notebooks directly created in zeppelin
     // Has to be removed
-    if (sfCookie.getSFSessionId() == null || sfCookie.getSFSessionId().isEmpty()
-            || sfCookie.getSFSessionId().equals("admin123$")) {
-      LOG.info("Bypassing security...");
-      return getAllKeys();
-    }
+//    if (sfCookie.getSFSessionId() == null || sfCookie.getSFSessionId().isEmpty()
+//            || sfCookie.getSFSessionId().equals("admin123$")) {
+//      LOG.info("Bypassing security...");
+//      return getAllKeys();
+//    }
 
     try {
       String jsonResponse = new HTTPHelper().get(getPredictiveServiceURL(),

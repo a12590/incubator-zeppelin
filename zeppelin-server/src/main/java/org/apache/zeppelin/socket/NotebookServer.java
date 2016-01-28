@@ -88,9 +88,8 @@ public class NotebookServer extends WebSocketServlet implements
 
   @Override
   public WebSocket doWebSocketConnect(HttpServletRequest req, String protocol) {
-    LOG.info("#################### doWebSocketConnect ##########################");
     String cookie = req.getHeader("Cookie");
-    LOG.info("Cookie : " + cookie);
+    LOG.info("Cookie @ doWebSocketConnect : " + cookie);
     return new NotebookSocket(req, protocol, this, cookie);
   }
 
@@ -98,10 +97,9 @@ public class NotebookServer extends WebSocketServlet implements
   public void onOpen(NotebookSocket conn) {
     LOG.info("New connection from {} : {}", conn.getRequest().getRemoteAddr(),
         conn.getRequest().getRemotePort());
-    LOG.info("#################### OnOpen ##########################");
     HttpServletRequest req = conn.getRequest();
     String cookie = req.getHeader("Cookie");
-    LOG.info("Cookie : " + cookie);
+    LOG.info("Cookie @ onOpen : " + cookie);
 
     connectedSockets.add(conn);
   }
@@ -490,11 +488,11 @@ public class NotebookServer extends WebSocketServlet implements
     }
 
     note.persist();
-//    broadcastNote(note);
-//    broadcastNoteList(conn);
+    broadcastNote(note);
+    broadcastNoteList(conn);
     addConnectionToNote(note.id(), (NotebookSocket) conn);
     conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", note)));
-    broadcastNoteList();
+//    broadcastNoteList();
   }
 
   private void removeNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
@@ -536,11 +534,11 @@ public class NotebookServer extends WebSocketServlet implements
     String noteId = getOpenNoteId(conn);
     String name = (String) fromMessage.get("name");
     Note newNote = notebook.cloneNote(noteId, name);
-//    broadcastNote(newNote);
-//    broadcastNoteList(conn);
+    broadcastNote(newNote);
+    broadcastNoteList(conn);
     addConnectionToNote(newNote.id(), (NotebookSocket) conn);
     conn.send(serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
-    broadcastNoteList();
+//    broadcastNoteList();
   }
 
   protected Note importNote(NotebookSocket conn, Notebook notebook, Message fromMessage)
@@ -594,7 +592,8 @@ public class NotebookServer extends WebSocketServlet implements
 
     note.persist();
     broadcastNote(note);
-    broadcastNoteList();
+//    broadcastNoteList();
+    broadcastNoteList(conn);
     return note;
   }
 
