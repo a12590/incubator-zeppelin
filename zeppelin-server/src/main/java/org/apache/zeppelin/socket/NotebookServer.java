@@ -329,7 +329,7 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
+    Map<String, org.apache.zeppelin.acl.Note> notebooks = NotebookACLUtils.getNotebooks(conn);
 
     List<Note> notes = notebook.getAllNotes();
     List<Map<String, String>> notesInfo = new LinkedList<>();
@@ -340,7 +340,7 @@ public class NotebookServer extends WebSocketServlet implements
         continue;
       }
 
-      if (notebooks.contains(note.id())) {
+      if (notebooks.containsKey(note.id())) {
         info.put("id", note.id());
         info.put("name", note.getName());
         notesInfo.add(info);
