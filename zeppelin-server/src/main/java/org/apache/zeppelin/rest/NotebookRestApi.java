@@ -259,8 +259,7 @@ public class NotebookRestApi {
 //      p = note.insertParagraph(indexDouble.intValue());
 //    }
     p.setTitle(request.getTitle());
-//    p.setText(request.getText());
-    p.setText(request.getContent());
+    p.setText(request.getText());
 
     note.persist();
     notebookServer.broadcastNote(note);
