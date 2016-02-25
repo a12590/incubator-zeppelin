@@ -18,55 +18,28 @@
 package org.apache.zeppelin.rest.message;
 
 /**
- * Request message for creating new paragraph
+ * NewParagraphRequest rest api request message
+ *
+ * index field will be ignored when it's used to provide initial paragraphs
  */
 public class NewParagraphRequest {
-  private String title;
-  private String content;
+  String title;
+  String text;
+  Double index;
+
+  public NewParagraphRequest() {
+
+  }
 
   public String getTitle() {
     return title;
   }
 
-  public void setTitle(String title) {
-    this.title = title;
+  public String getText() {
+    return text;
   }
 
-  public String getContent() {
-    return content;
-  }
-
-  public void setContent(String content) {
-    this.content = content;
+  public Double getIndex() {
+    return index;
   }
 }
-
-//package org.apache.zeppelin.rest.message;
-//
-///**
-// * NewParagraphRequest rest api request message
-// *
-// * index field will be ignored when it's used to provide initial paragraphs
-// */
-//public class NewParagraphRequest {
-//  String title;
-//  String text;
-//  Double index;
-//
-//  public NewParagraphRequest() {
-//
-//  }
-//
-//  public String getTitle() {
-//    return title;
-//  }
-//
-//  public String getText() {
-//    return text;
-//  }
-//
-//  public Double getIndex() {
-//    return index;
-//  }
-//>>>>>>> 11d25be8c3d13f55763609a4ccb93394771a6971
-//}

@@ -8,6 +8,7 @@ public class Note {
   private String name;
   private String description;
   private String url;
+  private boolean hideCode = true;
 
   public String getId() {
     return id;
@@ -43,6 +44,14 @@ public class Note {
 
   public void setUrl(String url) {
     this.url = url;
+  }
+
+  public boolean isHideCode() {
+    return hideCode;
+  }
+
+  public void setHideCode(boolean hideCode) {
+    this.hideCode = hideCode;
   }
 
 }

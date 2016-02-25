@@ -3,7 +3,9 @@ package org.apache.zeppelin.acl;
 import static org.apache.zeppelin.acl.Constants.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Notebook;
@@ -20,7 +22,7 @@ import com.google.gson.Gson;
 public class NotebookACLUtils {
   private static final Logger LOG = LoggerFactory.getLogger(NotebookACLUtils.class);
 
-  public static List<String> getNotebooks(NotebookSocket socket) {
+  public static Map<String, org.apache.zeppelin.acl.Note> getNotebooks(NotebookSocket socket) {
     List<org.apache.zeppelin.acl.Note> noteList = null;
 
     SFCookie sfCookie = new SFCookie(socket.getCookie());
@@ -45,24 +47,27 @@ public class NotebookACLUtils {
       throw new RuntimeException(e);
     }
 
-    List<String> notebookKeys = new ArrayList<>();
+    Map<String, org.apache.zeppelin.acl.Note> notebookMap = new HashMap<>();
     if (noteList != null && !noteList.isEmpty()) {
       for (org.apache.zeppelin.acl.Note note : noteList) {
-        notebookKeys.add(note.getId());
+        notebookMap.put(note.getId(), note);
       }
     }
 
-    LOG.info("Allowed notebooks " + notebookKeys);
-    return notebookKeys;
+    LOG.info("Allowed notebooks " + notebookMap.keySet());
+    return notebookMap;
   }
 
-  private static List<String> getAllKeys() {
+  private static Map<String, org.apache.zeppelin.acl.Note> getAllKeys() {
     Notebook notebook = ZeppelinServer.notebook;
     List<Note> notes = notebook.getAllNotes();
-    List<String> notebookList = new ArrayList<>();
+    Map<String, org.apache.zeppelin.acl.Note> notebookList = new HashMap<>();
     if (notes != null) {
       for (Note note : notes) {
-        notebookList.add(note.getId());
+        org.apache.zeppelin.acl.Note aclNote = new org.apache.zeppelin.acl.Note();
+        aclNote.setId(note.getId());
+        aclNote.setHideCode(true);
+        notebookList.put(note.getId(), aclNote);
       }
     }
 

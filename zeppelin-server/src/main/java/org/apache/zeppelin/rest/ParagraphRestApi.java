@@ -89,7 +89,7 @@ public class ParagraphRestApi {
   private void persistParagraph(Note note, NewParagraphRequest paraRequest,
       Paragraph paragraph) throws IOException {
     paragraph.setTitle(paraRequest.getTitle());
-    paragraph.setText(paraRequest.getContent());
+    paragraph.setText(paraRequest.getText());
 
     note.persist();
     notebookServer.broadcastNote(note);

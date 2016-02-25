@@ -177,8 +177,7 @@ public class NotebookRestApi {
       for (NewParagraphRequest paragraphRequest : initialParagraphs) {
         Paragraph p = note.addParagraph();
         p.setTitle(paragraphRequest.getTitle());
-//        p.setText(paragraphRequest.getText());
-        p.setText(paragraphRequest.getContent());
+        p.setText(paragraphRequest.getText());
       }
       note.addParagraph(); // add one paragraph to the last
     }

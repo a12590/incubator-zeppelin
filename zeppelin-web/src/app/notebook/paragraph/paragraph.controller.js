@@ -350,7 +350,10 @@ angular.module('zeppelinWebApp')
 
     var newParams = angular.copy($scope.paragraph.settings.params);
     var newConfig = angular.copy($scope.paragraph.config);
-    newConfig.editorHide = false;
+    // Show code only for admin users
+    if ($scope.paragraph.config.hideCode === false) {
+      newConfig.editorHide = false;
+    }
 
     commitParagraph($scope.paragraph.title, $scope.paragraph.text, newConfig, newParams);
   };

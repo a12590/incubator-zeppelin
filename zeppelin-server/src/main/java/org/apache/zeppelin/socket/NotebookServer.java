@@ -405,10 +405,18 @@ public class NotebookServer extends WebSocketServlet implements
       return;
     }
 
-    List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
+    Map<String, org.apache.zeppelin.acl.Note> notebooks = NotebookACLUtils.getNotebooks(conn);
     Note note = notebook.getNote(noteId);
-    if (notebooks.contains(noteId) && note != null) {
+    if (notebooks.containsKey(noteId) && note != null) {
       addConnectionToNote(note.id(), conn);
+      org.apache.zeppelin.acl.Note aclNote = notebooks.get(noteId);
+      if (aclNote.isHideCode()) {
+        List<Paragraph> paragraphs = note.getParagraphs();
+        for (Paragraph paragraph : paragraphs) {
+          paragraph.getConfig().put("hideCode", true);
+          paragraph.getConfig().put("editorHide", true);
+        }
+      }
       conn.send(serializeMessage(new Message(OP.NOTE).put("note", note)));
       sendAllAngularObjects(note, conn);
     }
