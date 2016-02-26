@@ -23,4 +23,9 @@ public class Notebooks {
     this.notebooks = notebooks;
   }
 
+  @Override
+  public String toString() {
+    return "Notebooks [notebooks=" + notebooks + "]";
+  }
+
 }
