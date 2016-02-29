@@ -30,7 +30,7 @@ public class Constants {
   public static final String STR_UTF_8 = "UTF-8";
   public static final String STR_HTTPS_URL_PREFIX = "https://";
 
-  public static final String PREDICTIVE_SERVICE_APP_PATH = "zeppelin/notebook";
+  public static final String PREDICTIVE_SERVICE_APP_PATH = "int/zeppelin/notebook";
   public static final String PREDICTIVE_SERVICE_USER_PATH = "user";
 
   public static final int CONNECTION_TIMEOUT = 60000;

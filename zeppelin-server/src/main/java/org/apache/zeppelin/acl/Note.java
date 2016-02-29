@@ -1,5 +1,7 @@
 package org.apache.zeppelin.acl;
 
+import java.util.List;
+
 /**
  * Notebook content provider
  */
@@ -8,7 +10,7 @@ public class Note {
   private String name;
   private String description;
   private String url;
-  private boolean hideCode;
+  private List<Para> paragraphs;
 
   public String getId() {
     return id;
@@ -46,19 +48,19 @@ public class Note {
     this.url = url;
   }
 
-  public boolean isHideCode() {
-    return hideCode;
+  public List<Para> getParagraphs() {
+    return paragraphs;
   }
 
-  public void setHideCode(boolean hideCode) {
-    this.hideCode = hideCode;
+  public void setParagraphs(List<Para> paragraphs) {
+    this.paragraphs = paragraphs;
   }
 
   @Override
   public String toString() {
-    return "Note [id=" + id + ", name=" + name + ", description=" + description + ", "
-            + "url=" + url + ", hideCode="
-            + hideCode + "]";
+    return "Note [id=" + id + ", name=" + name + ", description=" + description
+            + ", url=" + url + ", paragraphs="
+            + paragraphs + "]";
   }
 
 }
