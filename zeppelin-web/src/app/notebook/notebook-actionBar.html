@@ -24,10 +24,11 @@ limitations under the License.
               tooltip-placement="bottom" tooltip="Run all paragraphs">
         <i class="icon-control-play"></i>
       </button>
+      <!-- Hidden to all users -->
       <button type="button"
               class="btn btn-default btn-xs"
               ng-click="toggleAllEditor()"
-              ng-hide="viewOnly"
+              ng-hide="true"
               tooltip-placement="bottom" tooltip="Show/hide the code">
         <i ng-class="editorToggled ?  'fa icon-size-fullscreen' :'fa icon-size-actual'"></i></button>
       <button type="button"
