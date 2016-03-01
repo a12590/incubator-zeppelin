@@ -2,6 +2,7 @@ package org.apache.zeppelin.acl;
 
 import static org.apache.zeppelin.acl.Constants.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ import com.google.gson.Gson;
 public class NotebookACLUtils {
   private static final Logger LOG = LoggerFactory.getLogger(NotebookACLUtils.class);
 
-  public static Map<String, org.apache.zeppelin.acl.Note> getNotebooks(NotebookSocket socket) {
+  public static List<String> getNotebooks(NotebookSocket socket) {
     List<org.apache.zeppelin.acl.Note> noteList = null;
 
     SFCookie sfCookie = new SFCookie(socket.getCookie());
@@ -46,26 +47,41 @@ public class NotebookACLUtils {
       throw new RuntimeException(e);
     }
 
-    Map<String, org.apache.zeppelin.acl.Note> notebookMap = new HashMap<>();
+    List<String> notebookList = new ArrayList<>();
     if (noteList != null && !noteList.isEmpty()) {
       for (org.apache.zeppelin.acl.Note note : noteList) {
-        notebookMap.put(note.getId(), note);
+        notebookList.add(note.getId());
       }
     }
 
-    LOG.info("Allowed notebooks " + notebookMap.keySet());
-    return notebookMap;
+    LOG.info("Allowed notebooks " + notebookList);
+    return notebookList;
   }
 
-  private static Map<String, org.apache.zeppelin.acl.Note> getAllKeys() {
+  public static org.apache.zeppelin.acl.Note getNote(NotebookSocket socket, String notebookId) {
+    SFCookie sfCookie = new SFCookie(socket.getCookie());
+    LOG.info("AuthHeader : " + sfCookie.getSFSessionId());
+    LOG.info("InstanceURL : " + sfCookie.getSFInstanceURL());
+
+    try {
+      String jsonResponse = new HTTPHelper().get(getNotebookURL(notebookId),
+          sfCookie.getSFSessionId(),
+          sfCookie.getSFInstanceURL());
+      return new Gson().fromJson(jsonResponse, org.apache.zeppelin.acl.Note.class);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static List<String> getAllKeys() {
     Notebook notebook = ZeppelinServer.notebook;
     List<Note> notes = notebook.getAllNotes();
-    Map<String, org.apache.zeppelin.acl.Note> notebookList = new HashMap<>();
+    List<String> notebookList = new ArrayList<>();
     if (notes != null) {
       for (Note note : notes) {
         org.apache.zeppelin.acl.Note aclNote = new org.apache.zeppelin.acl.Note();
         aclNote.setId(note.getId());
-        notebookList.put(note.getId(), aclNote);
+        notebookList.add(note.getId());
       }
     }
 
@@ -91,4 +107,13 @@ public class NotebookACLUtils {
     return predServiceURL.toString();
   }
 
+  private static String getNotebookURL(String notebookId) {
+    StringBuilder notebookURL = new StringBuilder();
+    notebookURL.append(getPredictiveServiceURL());
+    notebookURL.append(STR_SLASH);
+    notebookURL.append(notebookId);
+
+    LOG.info("notebookURL : " + notebookURL);
+    return notebookURL.toString();
+  }
 }

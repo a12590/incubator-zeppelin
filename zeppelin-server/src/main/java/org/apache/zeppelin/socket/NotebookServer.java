@@ -330,7 +330,7 @@ public class NotebookServer extends WebSocketServlet implements
     boolean hideHomeScreenNotebookFromList = conf
         .getBoolean(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN_HIDE);
 
-    Map<String, org.apache.zeppelin.acl.Note> notebooks = NotebookACLUtils.getNotebooks(conn);
+    List<String> notebooks = NotebookACLUtils.getNotebooks(conn);
 
     List<Note> notes = notebook.getAllNotes();
     List<Map<String, String>> notesInfo = new LinkedList<>();
@@ -341,7 +341,7 @@ public class NotebookServer extends WebSocketServlet implements
         continue;
       }
 
-      if (notebooks.containsKey(note.id())) {
+      if (notebooks.contains(note.id())) {
         info.put("id", note.id());
         info.put("name", note.getName());
         notesInfo.add(info);
@@ -406,19 +406,21 @@ public class NotebookServer extends WebSocketServlet implements
       return;
     }
 
-    Map<String, org.apache.zeppelin.acl.Note> notebooks = NotebookACLUtils.getNotebooks(conn);
+    org.apache.zeppelin.acl.Note aclNote = NotebookACLUtils.getNote(conn, noteId);
     Note note = notebook.getNote(noteId);
-    if (notebooks.containsKey(noteId) && note != null) {
+    if (aclNote != null && note != null) {
       addConnectionToNote(note.id(), conn);
-      org.apache.zeppelin.acl.Note aclNote = notebooks.get(noteId);
       List<Para> aclParas = aclNote.getParagraphs();
       if (aclParas != null) {
         for (Para para : aclParas) {
-          if (para.isHideCode()) {
-            Paragraph paragraph = note.getParagraph(para.getId());
-            if (paragraph != null) {
+          Paragraph paragraph = note.getParagraph(para.getId());
+          if (paragraph != null) {
+            if (para.isHideCode()) {
               paragraph.getConfig().put("hideCode", true);
               paragraph.getConfig().put("editorHide", true);
+            } else {
+              paragraph.getConfig().put("hideCode", false);
+              paragraph.getConfig().put("editorHide", false);
             }
           }
         }
