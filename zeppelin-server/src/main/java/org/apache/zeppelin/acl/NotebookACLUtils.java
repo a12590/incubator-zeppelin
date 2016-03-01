@@ -65,7 +65,6 @@ public class NotebookACLUtils {
       for (Note note : notes) {
         org.apache.zeppelin.acl.Note aclNote = new org.apache.zeppelin.acl.Note();
         aclNote.setId(note.getId());
-        aclNote.setHideCode(true);
         notebookList.put(note.getId(), aclNote);
       }
     }

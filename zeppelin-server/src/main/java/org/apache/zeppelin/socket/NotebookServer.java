@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.zeppelin.acl.NotebookACLUtils;
+import org.apache.zeppelin.acl.Para;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
@@ -410,11 +411,16 @@ public class NotebookServer extends WebSocketServlet implements
     if (notebooks.containsKey(noteId) && note != null) {
       addConnectionToNote(note.id(), conn);
       org.apache.zeppelin.acl.Note aclNote = notebooks.get(noteId);
-      if (aclNote.isHideCode()) {
-        List<Paragraph> paragraphs = note.getParagraphs();
-        for (Paragraph paragraph : paragraphs) {
-          paragraph.getConfig().put("hideCode", true);
-          paragraph.getConfig().put("editorHide", true);
+      List<Para> aclParas = aclNote.getParagraphs();
+      if (aclParas != null) {
+        for (Para para : aclParas) {
+          if (para.isHideCode()) {
+            Paragraph paragraph = note.getParagraph(para.getId());
+            if (paragraph != null) {
+              paragraph.getConfig().put("hideCode", true);
+              paragraph.getConfig().put("editorHide", true);
+            }
+          }
         }
       }
       conn.send(serializeMessage(new Message(OP.NOTE).put("note", note)));
