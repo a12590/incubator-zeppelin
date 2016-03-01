@@ -2,7 +2,6 @@ package org.apache.zeppelin.acl;
 
 import static org.apache.zeppelin.acl.Constants.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
