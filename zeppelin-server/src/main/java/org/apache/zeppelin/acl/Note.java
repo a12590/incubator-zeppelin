@@ -8,7 +8,7 @@ public class Note {
   private String name;
   private String description;
   private String url;
-  private boolean hideCode;
+  private boolean hideCode = true;
 
   public String getId() {
     return id;
@@ -52,13 +52,6 @@ public class Note {
 
   public void setHideCode(boolean hideCode) {
     this.hideCode = hideCode;
-  }
-
-  @Override
-  public String toString() {
-    return "Note [id=" + id + ", name=" + name + ", description=" + description + ", "
-            + "url=" + url + ", hideCode="
-            + hideCode + "]";
   }
 
 }
