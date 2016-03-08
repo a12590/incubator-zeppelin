@@ -28,6 +28,10 @@ public class SFCookie {
     return cookies.get(COOKIE_APEX_INSTANCE_URL);
   }
 
+  public String getSMLSessionId() {
+    return cookies.get(COOKIE_APEX_SML_SESSION_ID);
+  }
+
   private void parse(String rawCookie) {
     LOG.debug("Cookies : " + rawCookie);
     if (rawCookie != null) {

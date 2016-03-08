@@ -5,6 +5,7 @@ import static org.apache.zeppelin.acl.Constants.*;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -21,14 +22,18 @@ import org.apache.log4j.Logger;
 public class HTTPHelper {
   private static final Logger LOG = Logger.getLogger(HTTPHelper.class);
 
-  public String get(String url, String sessionId, String instanceURL) throws Exception {
+  public String get(String url, SFCookie sfCookie) throws Exception {
     LOG.info("Executing GET request on " + url);
     HttpGet httpGet = new HttpGet(url);
     httpGet.setConfig(getRequestConfig());
 
-    httpGet.addHeader(HEADER_AUTH, HEADER_AUTH_TOKEN + sessionId);
+    if (!StringUtils.isEmpty(sfCookie.getSMLSessionId())) {
+      httpGet.addHeader(HEADER_AUTH, sfCookie.getSMLSessionId());
+    } else {
+      httpGet.addHeader(HEADER_AUTH, HEADER_AUTH_TOKEN + sfCookie.getSFSessionId());
+      httpGet.addHeader(HEADER_INSTANCE_URL, STR_HTTPS_URL_PREFIX + sfCookie.getSFInstanceURL());
+    }
     httpGet.addHeader(HEADER_ACCEPT, HEADER_APPLICATION_JSON);
-    httpGet.addHeader(HEADER_INSTANCE_URL, STR_HTTPS_URL_PREFIX + instanceURL);
 
     return execute(url, httpGet);
   }

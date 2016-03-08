@@ -41,7 +41,7 @@ public class SFFilter implements Filter {
     String sessionId = httpRequest.getParameter(Constants.URL_PARAM_SF_SESSION_ID);
     logger.info("Salesforce Session Id" + sessionId);
     if (sessionId != null) {
-      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, getSessionId(sessionId));
+      addCookie(httpResponse, Constants.COOKIE_APEX_AUTH, getDecodedStr(sessionId));
     } else {
       logger.warn("Session Id not passed as URL Parameter");
     }
@@ -52,6 +52,14 @@ public class SFFilter implements Filter {
       addCookie(httpResponse, Constants.COOKIE_APEX_INSTANCE_URL, instanceURL);
     } else {
       logger.warn("InstanceURL not passed as URL Parameter");
+    }
+
+    String smlSessionId = httpRequest.getParameter(Constants.URL_PARAM_SML_SESSION_ID);
+    logger.info("smlSessionId " + smlSessionId);
+    if (smlSessionId != null) {
+      addCookie(httpResponse, Constants.COOKIE_APEX_SML_SESSION_ID, getDecodedStr(smlSessionId));
+    } else {
+      logger.debug("SML Session Id not passed as URL Parameter");
     }
 
     String psUserURL = getPredServiceUserURL();
@@ -81,7 +89,7 @@ public class SFFilter implements Filter {
     return predServiceUserURL.toString();
   }
 
-  private String getSessionId(String encodedSessionId) {
+  private String getDecodedStr(String encodedSessionId) {
     Decoder decoder = Base64.getDecoder();
     byte[] decodedValue = decoder.decode(encodedSessionId);
     return new String(decodedValue, Charset.forName("UTF-8"));

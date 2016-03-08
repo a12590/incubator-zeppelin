@@ -39,8 +39,7 @@ public class NotebookACLUtils {
 
     try {
       String jsonResponse = new HTTPHelper().get(getPredictiveServiceURL(),
-              sfCookie.getSFSessionId(),
-              sfCookie.getSFInstanceURL());
+              sfCookie);
       Notebooks notebooks = new Gson().fromJson(jsonResponse, Notebooks.class);
       noteList = notebooks.getNotebooks();
     } catch (Exception e) {
@@ -65,8 +64,7 @@ public class NotebookACLUtils {
 
     try {
       String jsonResponse = new HTTPHelper().get(getNotebookURL(notebookId),
-          sfCookie.getSFSessionId(),
-          sfCookie.getSFInstanceURL());
+          sfCookie);
       return new Gson().fromJson(jsonResponse, org.apache.zeppelin.acl.Note.class);
     } catch (Exception e) {
       throw new RuntimeException(e);

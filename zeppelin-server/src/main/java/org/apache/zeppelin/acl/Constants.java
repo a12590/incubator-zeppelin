@@ -16,9 +16,11 @@ public class Constants {
 
   public static final String URL_PARAM_SF_SESSION_ID = "sf_sessionId";
   public static final String URL_PARAM_SF_INSTANCE_URL = "sf_InstanceURL";
+  public static final String URL_PARAM_SML_SESSION_ID = "sml_session_id";
 
   public static final String COOKIE_APEX_AUTH = "apex__Authorization";
   public static final String COOKIE_APEX_INSTANCE_URL = "apex__InstanceURL";
+  public static final String COOKIE_APEX_SML_SESSION_ID = "apex__SMLSessionId";
   public static final String COOKIE_PS_USER_URL = "ps__userURL";
   public static final String COOKIE_SID = "sid";
 
