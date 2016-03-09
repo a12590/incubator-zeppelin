@@ -57,7 +57,7 @@ public class SFFilter implements Filter {
     String smlSessionId = httpRequest.getParameter(Constants.URL_PARAM_SML_SESSION_ID);
     logger.info("smlSessionId " + smlSessionId);
     if (smlSessionId != null) {
-      addCookie(httpResponse, Constants.COOKIE_APEX_SML_SESSION_ID, getDecodedStr(smlSessionId));
+      addCookie(httpResponse, Constants.COOKIE_APEX_SML_SESSION_ID, smlSessionId);
     } else {
       logger.debug("SML Session Id not passed as URL Parameter");
     }
