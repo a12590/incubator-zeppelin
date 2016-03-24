@@ -86,22 +86,26 @@
   <modules>
     <module>zeppelin-interpreter</module>
     <module>zeppelin-zengine</module>
+    <module>zeppelin-display</module>
     <module>spark-dependencies</module>
     <module>spark</module>
     <module>markdown</module>
     <module>angular</module>
     <module>shell</module>
     <module>hive</module>
+    <module>hbase</module>
     <module>phoenix</module>
     <module>postgresql</module>
     <module>jdbc</module>
     <module>tajo</module>
+    <module>file</module>
     <module>flink</module>
     <module>ignite</module>
     <module>kylin</module>
     <module>lens</module>
     <module>cassandra</module>
     <module>elasticsearch</module>
+    <module>alluxio</module>
     <module>zeppelin-web</module>
     <module>zeppelin-server</module>
     <module>zeppelin-distribution</module>
@@ -188,6 +192,13 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>2.4</version>
+      </dependency>
+
+
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>3.2.1</version>
       </dependency>
 
       <dependency>
@@ -443,6 +454,7 @@
               <exclude>**/.idea/</exclude>
               <exclude>**/*.iml</exclude>
               <exclude>.git/</exclude>
+              <exclude>.github/*</exclude>
               <exclude>.gitignore</exclude>
               <exclude>.repository/</exclude>
               <exclude>**/*.diff</exclude>
@@ -473,6 +485,7 @@
               <exclude>**/licenses/**</exclude>
               <exclude>**/zeppelin-distribution/src/bin_license/**</exclude>
               <exclude>conf/interpreter.json</exclude>
+              <exclude>conf/notebook-authorization.json</exclude>
               <exclude>conf/zeppelin-env.sh</exclude>
               <exclude>spark-*-bin*/**</exclude>
 
@@ -632,6 +645,16 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>vendor-repo</id>
+      <repositories>
+        <repository>
+          <id>cloudera</id>
+          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+      </repositories>
+    </profile>
+
     <!-- Geode can be enabled by -Pgeode. see https://issues.apache.org/jira/browse/ZEPPELIN-375 -->
     <profile>
       <id>geode</id>

@@ -90,7 +90,9 @@ public class ParagraphRestApi {
       Paragraph paragraph) throws IOException {
     paragraph.setTitle(paraRequest.getTitle());
     paragraph.setText(paraRequest.getText());
-
+    if (paraRequest.getSkipOnError()) {
+      paragraph.getConfig().put("skipOnError", true);
+    }
     note.persist();
     notebookServer.broadcastNote(note);
     notebookServer.broadcastNoteList();

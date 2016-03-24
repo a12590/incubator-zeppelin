@@ -18,9 +18,7 @@
 package org.apache.zeppelin.rest;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -37,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.zeppelin.interpreter.InterpreterSetting;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Notebook;
+import org.apache.zeppelin.notebook.NotebookAuthorization;
 import org.apache.zeppelin.notebook.Paragraph;
 import org.apache.zeppelin.rest.message.CronRequest;
 import org.apache.zeppelin.rest.message.InterpreterSettingListForNoteBind;
@@ -46,13 +45,16 @@ import org.apache.zeppelin.rest.message.RunParagraphWithParametersRequest;
 import org.apache.zeppelin.search.SearchService;
 import org.apache.zeppelin.server.JsonResponse;
 import org.apache.zeppelin.socket.NotebookServer;
+import org.apache.zeppelin.utils.SecurityUtils;
 import org.quartz.CronExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
+import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
+import java.io.StringReader;
 /**
  * Rest api endpoint for the noteBook.
  */
@@ -64,6 +66,7 @@ public class NotebookRestApi {
   private Notebook notebook;
   private NotebookServer notebookServer;
   private SearchService notebookIndex;
+  private NotebookAuthorization notebookAuthorization;
 
   public NotebookRestApi() {}
 
@@ -71,6 +74,69 @@ public class NotebookRestApi {
     this.notebook = notebook;
     this.notebookServer = notebookServer;
     this.notebookIndex = search;
+    this.notebookAuthorization = notebook.getNotebookAuthorization();
+  }
+
+  /**
+   * get note authorization information
+   */
+  @GET
+  @Path("{noteId}/permissions")
+  public Response getNotePermissions(@PathParam("noteId") String noteId) {
+    Note note = notebook.getNote(noteId);
+    HashMap<String, Set<String>> permissionsMap = new HashMap();
+    permissionsMap.put("owners", notebookAuthorization.getOwners(noteId));
+    permissionsMap.put("readers", notebookAuthorization.getReaders(noteId));
+    permissionsMap.put("writers", notebookAuthorization.getWriters(noteId));
+    return new JsonResponse<>(Status.OK, "", permissionsMap).build();
+  }
+
+  String ownerPermissionError(Set<String> current,
+                              Set<String> allowed) throws IOException {
+    LOG.info("Cannot change permissions. Connection owners {}. Allowed owners {}",
+            current.toString(), allowed.toString());
+    return "Insufficient privileges to change permissions.\n\n" +
+            "Allowed owners: " + allowed.toString() + "\n\n" +
+            "User belongs to: " + current.toString();
+  }
+
+  /**
+   * set note authorization information
+   */
+  @PUT
+  @Path("{noteId}/permissions")
+  public Response putNotePermissions(@PathParam("noteId") String noteId, String req)
+      throws IOException {
+    HashMap<String, HashSet> permMap = gson.fromJson(req,
+            new TypeToken<HashMap<String, HashSet>>(){}.getType());
+    Note note = notebook.getNote(noteId);
+    String principal = SecurityUtils.getPrincipal();
+    HashSet<String> roles = SecurityUtils.getRoles();
+    LOG.info("Set permissions {} {} {} {} {}",
+            noteId,
+            principal,
+            permMap.get("owners"),
+            permMap.get("readers"),
+            permMap.get("writers")
+    );
+
+    HashSet<String> userAndRoles = new HashSet<String>();
+    userAndRoles.add(principal);
+    userAndRoles.addAll(roles);
+    if (!notebookAuthorization.isOwner(noteId, userAndRoles)) {
+      return new JsonResponse<>(Status.FORBIDDEN, ownerPermissionError(userAndRoles,
+              notebookAuthorization.getOwners(noteId))).build();
+    }
+    notebookAuthorization.setOwners(noteId, permMap.get("owners"));
+    notebookAuthorization.setReaders(noteId, permMap.get("readers"));
+    notebookAuthorization.setWriters(noteId, permMap.get("writers"));
+    LOG.debug("After set permissions {} {} {}",
+            notebookAuthorization.getOwners(noteId),
+            notebookAuthorization.getReaders(noteId),
+            notebookAuthorization.getWriters(noteId));
+    note.persist();
+    notebookServer.broadcastNote(note);
+    return new JsonResponse<>(Status.OK).build();
   }
 
   /**
@@ -100,7 +166,7 @@ public class NotebookRestApi {
           setting.id(),
           setting.getName(),
           setting.getGroup(),
-          setting.getInterpreterGroup(),
+          setting.getInterpreterInfos(),
           true)
       );
     }
@@ -120,7 +186,7 @@ public class NotebookRestApi {
             setting.id(),
             setting.getName(),
             setting.getGroup(),
-            setting.getInterpreterGroup(),
+            setting.getInterpreterInfos(),
             false)
         );
       }
@@ -159,6 +225,34 @@ public class NotebookRestApi {
     return new JsonResponse(Status.ACCEPTED, "", note.getId()).build();
   }
 
+  /**
+   * export note REST API
+   * 
+   * @param
+   * @return note JSON with status.OK
+   * @throws IOException
+   */
+  @GET
+  @Path("export/{id}")
+  public Response exportNoteBook(@PathParam("id") String noteId) throws IOException {
+    String exportJson = notebook.exportNote(noteId);
+    return new JsonResponse(Status.OK, "", exportJson).build();
+  }
+
+  /**
+   * import new note REST API
+   * 
+   * @param req - notebook Json
+   * @return JSON with new note ID
+   * @throws IOException
+   */
+  @POST
+  @Path("import")
+  public Response importNotebook(String req) throws IOException {
+    Note newNote = notebook.importNote(req, null);
+    return new JsonResponse<>(Status.CREATED, "", newNote.getId()).build();
+  }
+  
   /**
    * Create new note REST API
    * @param message - JSON with new note name

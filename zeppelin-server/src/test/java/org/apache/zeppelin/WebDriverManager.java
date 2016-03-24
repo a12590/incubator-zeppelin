@@ -44,7 +44,7 @@ public class WebDriverManager {
 
   private static String downLoadsDir = "";
 
-  static WebDriver getWebDriver() {
+  public static WebDriver getWebDriver() {
     WebDriver driver = null;
 
     if (driver == null) {
@@ -106,8 +106,8 @@ public class WebDriverManager {
     }
 
     String url;
-    if (System.getProperty("url") != null) {
-      url = System.getProperty("url");
+    if (System.getenv("url") != null) {
+      url = System.getenv("url");
     } else {
       url = "http://localhost:8080";
     }
