@@ -23,6 +23,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Matchers.anyString;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +38,7 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.interpreter.*;
+import org.apache.zeppelin.interpreter.mock.MockErrorInterpreter;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter1;
 import org.apache.zeppelin.interpreter.mock.MockInterpreter2;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
@@ -45,9 +50,11 @@ import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.search.SearchService;
+import org.apache.zeppelin.util.EmailSender;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.matchers.Any;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +82,7 @@ public class NotebookTest implements JobListenerFactory{
 
     System.setProperty(ConfVars.ZEPPELIN_HOME.getVarName(), tmpDir.getAbsolutePath());
     System.setProperty(ConfVars.ZEPPELIN_NOTEBOOK_DIR.getVarName(), notebookDir.getAbsolutePath());
-    System.setProperty(ConfVars.ZEPPELIN_INTERPRETERS.getVarName(), "org.apache.zeppelin.interpreter.mock.MockInterpreter1,org.apache.zeppelin.interpreter.mock.MockInterpreter2");
+    System.setProperty(ConfVars.ZEPPELIN_INTERPRETERS.getVarName(), "org.apache.zeppelin.interpreter.mock.MockInterpreter1,org.apache.zeppelin.interpreter.mock.MockInterpreter2,org.apache.zeppelin.interpreter.mock.MockErrorInterpreter");
 
     conf = ZeppelinConfiguration.create();
 
@@ -83,6 +90,7 @@ public class NotebookTest implements JobListenerFactory{
 
     MockInterpreter1.register("mock1", "org.apache.zeppelin.interpreter.mock.MockInterpreter1");
     MockInterpreter2.register("mock2", "org.apache.zeppelin.interpreter.mock.MockInterpreter2");
+    MockErrorInterpreter.register("mockerrorinterpreter", "org.apache.zeppelin.interpreter.mock.MockErrorInterpreter");
 
     depResolver = new DependencyResolver(tmpDir.getAbsolutePath() + "/local-repo");
     factory = new InterpreterFactory(conf, new InterpreterOption(false), null, null, depResolver);
@@ -271,7 +279,7 @@ public class NotebookTest implements JobListenerFactory{
     // create a note and a paragraph
     Note note = notebook.createNote();
     note.getNoteReplLoader().setInterpreters(factory.getDefaultInterpreterSettingList());
-    
+
     Paragraph p = note.addParagraph();
     Map config = new HashMap<String, Object>();
     p.setConfig(config);
@@ -300,7 +308,7 @@ public class NotebookTest implements JobListenerFactory{
       Thread.sleep(100);
     }
     assertNotEquals(dateFinished, p.getDateFinished());
-    
+
     // remove cron scheduler.
     config.put("cron", null);
     note.setConfig(config);
@@ -625,6 +633,79 @@ public class NotebookTest implements JobListenerFactory{
     notebook.removeNote(note1.getId());
   }
 
+  @Test
+  public void testSkipOnError() throws IOException {
+    Note note = notebook.createNote();
+    note.getNoteReplLoader().setInterpreters(factory.getDefaultInterpreterSettingList());
+
+    // p1
+    Paragraph p1 = note.addParagraph();
+    Map config1 = p1.getConfig();
+    config1.put("enabled", true);
+    p1.setConfig(config1);
+    p1.setText("%mockerrorinterpreter error");
+
+    // p2
+    Paragraph p2 = note.addParagraph();
+    Map config2 = p2.getConfig();
+    config2.put("skipOnError", true);
+    p2.setConfig(config2);
+    p2.setText("p2");
+
+    // p3
+    Paragraph p3 = note.addParagraph();
+    p3.setText("%mockerrorinterpreter p3");
+
+    // when
+    note.runAll();
+    // wait for finish
+    while(p3.isTerminated()==false) {
+      Thread.yield();
+    }
+
+    assertEquals("Error...", p1.getException().getMessage());
+    assertNull(p2.getResult());
+    assertEquals("error: p3", p3.getResult().message());
+
+    notebook.removeNote(note.getId());
+  }
+
+  @Test
+  public void testSendMailOnError() throws IOException {
+    EmailSender emailSenderMock = mock(EmailSender.class);
+    when(emailSenderMock.canSendEmail()).thenReturn(true);
+    doNothing().when(emailSenderMock).send(anyString(), anyString());
+
+    Note note = notebook.createNote();
+    note.setEmailSender(emailSenderMock);
+    note.getNoteReplLoader().setInterpreters(factory.getDefaultInterpreterSettingList());
+
+    // p1
+    Paragraph p1 = note.addParagraph();
+    Map config1 = p1.getConfig();
+    config1.put("enabled", true);
+    p1.setConfig(config1);
+    p1.setText("%mockerrorinterpreter p1");
+
+    // p2
+    Paragraph p2 = note.addParagraph();
+    Map config2 = p2.getConfig();
+    p2.setConfig(config2);
+    p2.setText("p2");
+
+    // when
+    note.runAll();
+
+    // wait for finish
+    while(p2.isTerminated()==false) {
+      Thread.yield();
+    }
+
+    verify(emailSenderMock).canSendEmail();
+    verify(emailSenderMock).send(anyString(), anyString());
+
+    notebook.removeNote(note.getId());
+  }
 
   private void delete(File file){
     if(file.isFile()) file.delete();
@@ -641,27 +722,36 @@ public class NotebookTest implements JobListenerFactory{
 
   @Override
   public ParagraphJobListener getParagraphJobListener(Note note) {
-    return new ParagraphJobListener(){
+    return new TestParagraphJobListenerImpl(note);
+  }
 
-      @Override
-      public void onOutputAppend(Paragraph paragraph, InterpreterOutput out, String output) {
-      }
+  private static class TestParagraphJobListenerImpl implements ParagraphJobListener{
+    private Note note;
 
-      @Override
-      public void onOutputUpdate(Paragraph paragraph, InterpreterOutput out, String output) {
-      }
+    public TestParagraphJobListenerImpl(Note note) {
+      this.note = note;
+    }
 
-      @Override
-      public void onProgressUpdate(Job job, int progress) {
-      }
+    @Override
+    public void onProgressUpdate(Job job, int progress) {
+    }
 
-      @Override
-      public void beforeStatusChange(Job job, Status before, Status after) {
-      }
+    @Override
+    public void beforeStatusChange(Job job, Status before, Status after) {
+    }
 
-      @Override
-      public void afterStatusChange(Job job, Status before, Status after) {
-      }
-    };
+    @Override
+    public void afterStatusChange(Job job, Status before, Status after) {
+      note.setExecutionStatus(job.getId(), after);
+    }
+
+    @Override
+    public void onOutputAppend(Paragraph paragraph, InterpreterOutput out, String output) {
+    }
+
+    @Override
+    public void onOutputUpdate(Paragraph paragraph, InterpreterOutput out, String output) {
+    }
+
   }
 }

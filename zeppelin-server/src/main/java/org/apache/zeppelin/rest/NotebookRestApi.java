@@ -227,7 +227,7 @@ public class NotebookRestApi {
 
   /**
    * export note REST API
-   * 
+   *
    * @param
    * @return note JSON with status.OK
    * @throws IOException
@@ -241,7 +241,7 @@ public class NotebookRestApi {
 
   /**
    * import new note REST API
-   * 
+   *
    * @param req - notebook Json
    * @return JSON with new note ID
    * @throws IOException
@@ -252,7 +252,7 @@ public class NotebookRestApi {
     Note newNote = notebook.importNote(req, null);
     return new JsonResponse<>(Status.CREATED, "", newNote.getId()).build();
   }
-  
+
   /**
    * Create new note REST API
    * @param message - JSON with new note name
@@ -272,6 +272,9 @@ public class NotebookRestApi {
         Paragraph p = note.addParagraph();
         p.setTitle(paragraphRequest.getTitle());
         p.setText(paragraphRequest.getText());
+        if (paragraphRequest.getSkipOnError()) {
+          p.getConfig().put("skipOnError", true);
+        }
       }
       note.addParagraph(); // add one paragraph to the last
     }
