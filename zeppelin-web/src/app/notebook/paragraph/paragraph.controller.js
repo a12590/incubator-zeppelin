@@ -453,6 +453,13 @@ angular.module('zeppelinWebApp')
     commitParagraph($scope.paragraph.title, $scope.paragraph.text, newConfig, newParams);
   };
 
+  $scope.toggleSkipOnError = function () {
+    $scope.paragraph.config.skipOnError = $scope.paragraph.config.skipOnError ? false : true;
+    var newParams = angular.copy($scope.paragraph.settings.params);
+    var newConfig = angular.copy($scope.paragraph.config);
+    commitParagraph($scope.paragraph.title, $scope.paragraph.text, newConfig, newParams);
+  };
+
   $scope.run = function() {
     var editorValue = $scope.editor.getValue();
     if (editorValue) {
