@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.any;
 
 import java.io.File;
 import java.io.IOException;
@@ -674,7 +674,7 @@ public class NotebookTest implements JobListenerFactory{
   public void testSendMailOnError() throws IOException {
     EmailSender emailSenderMock = mock(EmailSender.class);
     when(emailSenderMock.canSendEmail()).thenReturn(true);
-    doNothing().when(emailSenderMock).send(anyString(), anyString());
+    doNothing().when(emailSenderMock).send(any(Paragraph.class));
 
     Note note = notebook.createNote();
     note.setEmailSender(emailSenderMock);
@@ -702,7 +702,7 @@ public class NotebookTest implements JobListenerFactory{
     }
 
     verify(emailSenderMock).canSendEmail();
-    verify(emailSenderMock).send(anyString(), anyString());
+    verify(emailSenderMock).send(any(Paragraph.class));
 
     notebook.removeNote(note.getId());
   }

@@ -219,5 +219,71 @@
   <description>Anonymous user allowed by default</description>
 </property>
 
+<property>
+  <name>zeppelin.send.mail.on.execution.error</name>
+  <value>true</value>
+  <description>Send email with details if any paragraph execution resulted in error</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.user</name>
+  <value>springml.zeppelin@gmail.com</value>
+  <description>SMTP User for authentication</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.password</name>
+  <value>Scale2016!</value>
+  <description>SMTP User password for authentication</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.auth.enable</name>
+  <value>true</value>
+  <description>true if mail server requires authentication</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.ssl.enable</name>
+  <value>false</value>
+  <description>true if email has to be sent in SSL</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.starttls.enable</name>
+  <value>true</value>
+  <description>true if email has to be sent in TLS</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.host</name>
+  <value>smtp.gmail.com</value>
+  <description>SMTP Host</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.port</name>
+  <value>587</value>
+  <description>SMTP Port</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.from.address</name>
+  <value>springml.zeppelin@gmail.com</value>
+  <description>From address of the email to be sent</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.to.address</name>
+  <value>samalexg@gmail.com</value>
+  <description>Email address to which zeppelin has to send email</description>
+</property>
+
+<property>
+  <name>zeppelin.mail.smtp.subject</name>
+  <value>Error during paragraph execution</value>
+  <description>Subject of mail to be sent</description>
+</property>
+
 </configuration>
 

@@ -498,6 +498,7 @@ public class ZeppelinConfiguration extends XMLConfiguration {
     ZEPPELIN_MAIL_SMTP_STARTTLS_ENABLE("zeppelin.mail.smtp.starttls.enable", true),
     ZEPPELIN_MAIL_SMTP_HOST("zeppelin.mail.smtp.host", "smtp.gmail.com"),
     ZEPPELIN_MAIL_SMTP_PORT("zeppelin.mail.smtp.port", 587),
+    ZEPPELIN_MAIL_SMTP_SUBJECT("zeppelin.mail.smtp.subject", "Error during paragraph execution"),
     ZEPPELIN_MAIL_SMTP_FROM_ADDRESS("zeppelin.mail.smtp.from.address", "admin@zeppelin.com"),
     ZEPPELIN_MAIL_SMTP_TO_ADDRESS("zeppelin.mail.smtp.to.address", "user@zeppelin.com");
 

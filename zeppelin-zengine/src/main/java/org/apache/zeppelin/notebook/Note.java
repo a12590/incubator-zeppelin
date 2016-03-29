@@ -385,7 +385,8 @@ public class Note implements Serializable, JobListener {
       intp.getScheduler().submit(p);
 
       Status lastParaExecutionStatus = getCompletionStatus(p.getId());
-      if (lastParaExecutionStatus.isError() || (p.getResult().code() == InterpreterResult.Code.ERROR)) {
+      if (lastParaExecutionStatus.isError() ||
+              (p.getResult().code() == InterpreterResult.Code.ERROR)) {
         noteExecutionHasError = true;
         notifyExecutionError(p);
       }
@@ -441,12 +442,7 @@ public class Note implements Serializable, JobListener {
 
   private void notifyExecutionError(Paragraph p) {
     if (emailSender.canSendEmail()) {
-      String subject = "Error during zeppelin notebook execution";
-      String message = "\nParagraph : " + p.getId() +
-              "\nNotebook : " + getName() +
-              "\nError : " +
-              p.getReturn().toString();
-      emailSender.send(subject, message);
+      emailSender.send(p);
     }
   }
 

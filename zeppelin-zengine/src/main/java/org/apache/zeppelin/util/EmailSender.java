@@ -1,14 +1,20 @@
 package org.apache.zeppelin.util;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
+import org.apache.zeppelin.notebook.Paragraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +24,15 @@ import org.slf4j.LoggerFactory;
  */
 public class EmailSender {
   private static Logger logger = LoggerFactory.getLogger(EmailSender.class);
+  private static final String ZEPPELIN_MAIL_TXT = "zeppelin-mail.txt";
+  private static final String REGEX_TOKEN = "\\{([^}]+)\\}";
+  private static final String DEFAULT_TEMPLATE_CONTENT = "Note Name : {NOTE_NAME}\n"
+          + "Paragraph Name : {PARAGRAPH_NAME}\n"
+          + "Error : {RESULT}";
+
+  private static final String TOKEN_NOTE_NAME = "NOTE_NAME";
+  private static final String TOKEN_PARAGRAPH_NAME = "PARAGRAPH_NAME";
+  private static final String TOKEN_RESULT = "RESULT";
 
   private ZeppelinConfiguration config = null;
   private String user = null;
@@ -29,6 +44,8 @@ public class EmailSender {
   private int port = 0;
   private String to = null;
   private String from = null;
+  private String subject = null;
+  private String template = null;
   private ExecutorService executor = Executors.newFixedThreadPool(5);
 
   public EmailSender() {
@@ -47,6 +64,37 @@ public class EmailSender {
     port = config.getInt(ConfVars.ZEPPELIN_MAIL_SMTP_PORT);
     to = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_TO_ADDRESS);
     from = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_FROM_ADDRESS);
+    subject = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_FROM_ADDRESS);
+  }
+
+  private void initTemplate() {
+    InputStream is = getTemplateContent();
+    try {
+      if (is != null) {
+        template = IOUtils.toString(is);
+      } else {
+        template = DEFAULT_TEMPLATE_CONTENT;
+      }
+    } catch (IOException ioe) {
+      logger.error("Error while reading mail template " + ZEPPELIN_MAIL_TXT, ioe);
+      template = DEFAULT_TEMPLATE_CONTENT;
+    }
+  }
+
+  private InputStream getTemplateContent() {
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    InputStream is = EmailSender.class.getResourceAsStream(ZEPPELIN_MAIL_TXT);
+    if (is == null) {
+      ClassLoader cl = ZeppelinConfiguration.class.getClassLoader();
+      if (cl != null) {
+        is = cl.getResourceAsStream(ZEPPELIN_MAIL_TXT);
+      }
+    }
+    if (is == null) {
+      is = classLoader.getResourceAsStream(ZEPPELIN_MAIL_TXT);
+    }
+
+    return is;
   }
 
   public boolean canSendEmail() {
@@ -57,14 +105,53 @@ public class EmailSender {
     return config.getBoolean(ConfVars.ZEPPELIN_SEND_EMAIL_ON_ERROR);
   }
 
+  public void send(Paragraph paragraph) {
 
-  public void send(String subject, String message) {
     if (canSendEmail()) {
+      if (template == null) {
+        initTemplate();
+      }
+      String message = replaceTokens(paragraph);
+
       RunnableEmailSender runnable = new RunnableEmailSender(subject, message);
       executor.submit(runnable);
     } else {
       logger.error("Zeppelin was not configured to send emails");
     }
+  }
+
+  private String replaceTokens(Paragraph paragraph) {
+    Pattern pattern = Pattern.compile(REGEX_TOKEN);
+    Matcher matcher = pattern.matcher(template);
+    StringBuffer replacedBuffer = new StringBuffer();
+    while (matcher.find()) {
+      String replacement = getTokenValue(matcher.group(1), paragraph);
+      if (replacement != null) {
+        matcher.appendReplacement(replacedBuffer, "");
+        replacedBuffer.append(replacement);
+      }
+    }
+
+    matcher.appendTail(replacedBuffer);
+    return replacedBuffer.toString();
+  }
+
+  private String getTokenValue(String token, Paragraph paragraph) {
+    String value = null;
+    if (TOKEN_NOTE_NAME.equals(token)) {
+      value = paragraph.getNote().getName();
+    } else if (TOKEN_PARAGRAPH_NAME.equals(token)) {
+      value = paragraph.getTitle();
+    } else if (TOKEN_RESULT.equals(token)) {
+      value = paragraph.getReturn().toString();
+    } else {
+      value = System.getenv(token);
+      if (value == null) {
+        value = System.getProperty(token);
+      }
+    }
+
+    return value;
   }
 
   private class RunnableEmailSender implements Runnable {
