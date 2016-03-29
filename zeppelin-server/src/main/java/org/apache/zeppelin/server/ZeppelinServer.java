@@ -33,13 +33,10 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.dep.DependencyResolver;
 import org.apache.zeppelin.interpreter.InterpreterFactory;
 import org.apache.zeppelin.notebook.Notebook;
+import org.apache.zeppelin.notebook.NotebookAuthorization;
 import org.apache.zeppelin.notebook.repo.NotebookRepo;
 import org.apache.zeppelin.notebook.repo.NotebookRepoSync;
-import org.apache.zeppelin.rest.InterpreterRestApi;
-import org.apache.zeppelin.rest.NotebookRestApi;
-import org.apache.zeppelin.rest.ParagraphRestApi;
-import org.apache.zeppelin.rest.SecurityRestApi;
-import org.apache.zeppelin.rest.ZeppelinRestApi;
+import org.apache.zeppelin.rest.*;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.search.SearchService;
 import org.apache.zeppelin.search.LuceneSearch;
@@ -75,19 +72,24 @@ public class ZeppelinServer extends Application {
   private InterpreterFactory replFactory;
   private NotebookRepo notebookRepo;
   private SearchService notebookIndex;
+  private NotebookAuthorization notebookAuthorization;
   private DependencyResolver depResolver;
 
   public ZeppelinServer() throws Exception {
     ZeppelinConfiguration conf = ZeppelinConfiguration.create();
 
-    this.depResolver = new DependencyResolver(conf.getString(ConfVars.ZEPPELIN_DEP_LOCALREPO));
+    this.depResolver = new DependencyResolver(
+        conf.getString(ConfVars.ZEPPELIN_INTERPRETER_LOCALREPO));
     this.schedulerFactory = new SchedulerFactory();
-    this.replFactory = new InterpreterFactory(conf, notebookWsServer, depResolver);
+    this.replFactory = new InterpreterFactory(conf, notebookWsServer,
+            notebookWsServer, depResolver);
     this.notebookRepo = new NotebookRepoSync(conf);
     this.notebookIndex = new LuceneSearch();
 
+    this.notebookAuthorization = new NotebookAuthorization(conf);
     notebook = new Notebook(conf,
-        notebookRepo, schedulerFactory, replFactory, notebookWsServer, notebookIndex);
+        notebookRepo, schedulerFactory, replFactory, notebookWsServer,
+            notebookIndex, notebookAuthorization);
   }
 
   public static void main(String[] args) throws InterruptedException {
@@ -293,6 +295,9 @@ public class ZeppelinServer extends Application {
 
     SecurityRestApi securityApi = new SecurityRestApi();
     singletons.add(securityApi);
+
+    ConfigurationsRestApi settingsApi = new ConfigurationsRestApi(notebook);
+    singletons.add(settingsApi);
 
     return singletons;
   }

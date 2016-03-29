@@ -57,14 +57,27 @@ angular.module('zeppelinWebApp').service('websocketMsgSrv', function($rootScope,
       websocketEvents.sendNewEvent({ op: 'INSERT_PARAGRAPH', data : {index: newIndex}});
     },
 
-    updateAngularObject: function(noteId, name, value, interpreterGroupId) {
+    updateAngularObject: function(noteId, paragraphId, name, value, interpreterGroupId) {
       websocketEvents.sendNewEvent({
         op: 'ANGULAR_OBJECT_UPDATED',
         data: {
           noteId: noteId,
+          paragraphId: paragraphId,
           name: name,
           value: value,
           interpreterGroupId: interpreterGroupId
+        }
+      });
+    },
+
+    clientBindAngularObject: function(noteId, name, value, paragraphId) {
+      websocketEvents.sendNewEvent({
+        op: 'ANGULAR_OBJECT_CLIENT_BIND',
+        data: {
+          noteId: noteId,
+          name: name,
+          value: value,
+          paragraphId: paragraphId
         }
       });
     },
@@ -84,6 +97,10 @@ angular.module('zeppelinWebApp').service('websocketMsgSrv', function($rootScope,
           params: paragraphParams
         }
       });
+    },
+
+    runNote: function(noteId) {
+      websocketEvents.sendNewEvent({op: 'RUN_NOTE', data: {id: noteId}});
     },
 
     removeParagraph: function(paragraphId) {
@@ -123,6 +140,16 @@ angular.module('zeppelinWebApp').service('websocketMsgSrv', function($rootScope,
         op: 'IMPORT_NOTE',
         data: {
           notebook: notebook
+        }
+      });
+    },
+
+    checkpointNotebook: function(noteId, commitMessage) {
+      websocketEvents.sendNewEvent({
+        op: 'CHECKPOINT_NOTEBOOK',
+        data: {
+          noteId: noteId,
+          commitMessage: commitMessage
         }
       });
     },

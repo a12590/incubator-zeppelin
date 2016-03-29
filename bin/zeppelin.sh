@@ -1,7 +1,5 @@
 #!/bin/bash
 #
-# Copyright 2007 The Apache Software Foundation
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -47,7 +45,7 @@ LOG="${ZEPPELIN_LOG_DIR}/zeppelin-cli-${ZEPPELIN_IDENT_STRING}-${HOSTNAME}.out"
   
 ZEPPELIN_SERVER=org.apache.zeppelin.server.ZeppelinServer
 JAVA_OPTS+=" -Dzeppelin.log.file=${ZEPPELIN_LOGFILE}"
-
+JAVA_OPTS+=" -agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n"
 # Predictive Service Parameters
 PREDICTIVE_SERVICE_PROTOCOL="http"
 # PREDICTIVE_SERVICE_HOST="ec2-52-89-133-37.us-west-2.compute.amazonaws.com"
