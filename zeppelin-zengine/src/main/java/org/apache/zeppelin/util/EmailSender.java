@@ -64,7 +64,7 @@ public class EmailSender {
     port = config.getInt(ConfVars.ZEPPELIN_MAIL_SMTP_PORT);
     to = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_TO_ADDRESS);
     from = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_FROM_ADDRESS);
-    subject = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_FROM_ADDRESS);
+    subject = config.getString(ConfVars.ZEPPELIN_MAIL_SMTP_SUBJECT);
   }
 
   private void initTemplate() {

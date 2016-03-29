@@ -275,7 +275,7 @@
 
 <property>
   <name>zeppelin.mail.smtp.to.address</name>
-  <value>samalexg@gmail.com</value>
+  <value>springml.zeppelin.dev@gmail.com</value>
   <description>Email address to which zeppelin has to send email</description>
 </property>
 
