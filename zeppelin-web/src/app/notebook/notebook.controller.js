@@ -176,6 +176,10 @@ angular.module('zeppelinWebApp').controller('NotebookCtrl',
       message: 'Run all paragraphs?',
       callback: function(result) {
         if (result) {
+          _.forEach($scope.note.paragraphs, function(n, key) {
+            angular.element('#' + n.id + '_paragraphColumn_main').scope().saveParagraph();
+          });
+
           websocketMsgSrv.runNote(noteId);
         }
       }
