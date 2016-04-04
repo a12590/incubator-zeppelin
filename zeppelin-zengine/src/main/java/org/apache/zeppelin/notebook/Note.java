@@ -36,6 +36,7 @@ import org.apache.zeppelin.scheduler.Job;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.apache.zeppelin.search.SearchService;
+import org.apache.zeppelin.util.EmailSender;
 
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -69,6 +70,7 @@ public class Note implements Serializable, JobListener {
   private transient NotebookRepo repo;
   private transient SearchService index;
   private transient ScheduledFuture delayedPersist;
+  private transient EmailSender emailSender = new EmailSender();
 
   /**
    * note configurations.
@@ -151,6 +153,14 @@ public class Note implements Serializable, JobListener {
 
   public void setExecutionStatus(String paraId, Status status) {
     executionStatus.put(paraId, status);
+  }
+
+  public EmailSender getEmailSender() {
+    return emailSender;
+  }
+
+  public void setEmailSender(EmailSender emailSender) {
+    this.emailSender = emailSender;
   }
 
   /**
@@ -375,6 +385,7 @@ public class Note implements Serializable, JobListener {
       if (lastParaExecutionStatus.isError() ||
               (p.getResult().code() == InterpreterResult.Code.ERROR)) {
         noteExecutionHasError = true;
+        notifyExecutionError(p);
       }
     }
   }
@@ -424,6 +435,12 @@ public class Note implements Serializable, JobListener {
     }
 
     return executionStatus.get(paraId);
+  }
+
+  private void notifyExecutionError(Paragraph p) {
+    if (emailSender.canSendEmail()) {
+      emailSender.send(p);
+    }
   }
 
   private void snapshotAngularObjectRegistry() {

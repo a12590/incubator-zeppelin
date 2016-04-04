@@ -23,6 +23,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Matchers.any;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +50,7 @@ import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.scheduler.JobListener;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.search.SearchService;
+import org.apache.zeppelin.util.EmailSender;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -508,7 +513,9 @@ public class NotebookTest implements JobListenerFactory{
       assertEquals(Job.Status.READY, p.getStatus());
     }
 
-    note.runAll();
+    for (Paragraph p : paragraphs) {
+      note.run(p.getId());
+    }
 
     while (paragraphs.get(0).getStatus() != Status.FINISHED) Thread.yield();
 
@@ -677,6 +684,43 @@ public class NotebookTest implements JobListenerFactory{
     assertEquals("Error...", p1.getException().getMessage());
     assertNull(p2.getResult());
     assertEquals("error: p3", p3.getResult().message());
+
+    notebook.removeNote(note.getId());
+  }
+
+  @Test
+  public void testSendMailOnError() throws IOException {
+    EmailSender emailSenderMock = mock(EmailSender.class);
+    when(emailSenderMock.canSendEmail()).thenReturn(true);
+    doNothing().when(emailSenderMock).send(any(Paragraph.class));
+
+    Note note = notebook.createNote();
+    note.setEmailSender(emailSenderMock);
+    note.getNoteReplLoader().setInterpreters(factory.getDefaultInterpreterSettingList());
+
+    // p1
+    Paragraph p1 = note.addParagraph();
+    Map config1 = p1.getConfig();
+    config1.put("enabled", true);
+    p1.setConfig(config1);
+    p1.setText("%mockerrorinterpreter p1");
+
+    // p2
+    Paragraph p2 = note.addParagraph();
+    Map config2 = p2.getConfig();
+    p2.setConfig(config2);
+    p2.setText("p2");
+
+    // when
+    note.runAll();
+
+    // wait for finish
+    while(p2.isTerminated()==false) {
+      Thread.yield();
+    }
+
+    verify(emailSenderMock).canSendEmail();
+    verify(emailSenderMock).send(any(Paragraph.class));
 
     notebook.removeNote(note.getId());
   }

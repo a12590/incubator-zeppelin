@@ -501,6 +501,17 @@ public class ZeppelinConfiguration extends XMLConfiguration {
     // i.e. http://localhost:8080
     ZEPPELIN_ALLOWED_ORIGINS("zeppelin.server.allowed.origins", "*"),
     ZEPPELIN_ANONYMOUS_ALLOWED("zeppelin.anonymous.allowed", true),
+    ZEPPELIN_SEND_EMAIL_ON_ERROR("zeppelin.send.mail.on.execution.error", false),
+    ZEPPELIN_MAIL_SMTP_USER("zeppelin.mail.smtp.user", "admin@zeppelin.com"),
+    ZEPPELIN_MAIL_SMTP_PASSWORD("zeppelin.mail.smtp.password", "zeppelin"),
+    ZEPPELIN_MAIL_SMTP_AUTH_ENABLE("zeppelin.mail.smtp.auth.enable", false),
+    ZEPPELIN_MAIL_SMTP_SSL_ENABLE("zeppelin.mail.smtp.ssl.enable", false),
+    ZEPPELIN_MAIL_SMTP_STARTTLS_ENABLE("zeppelin.mail.smtp.starttls.enable", true),
+    ZEPPELIN_MAIL_SMTP_HOST("zeppelin.mail.smtp.host", "smtp.gmail.com"),
+    ZEPPELIN_MAIL_SMTP_PORT("zeppelin.mail.smtp.port", 587),
+    ZEPPELIN_MAIL_SMTP_SUBJECT("zeppelin.mail.smtp.subject", "Error during paragraph execution"),
+    ZEPPELIN_MAIL_SMTP_FROM_ADDRESS("zeppelin.mail.smtp.from.address", "admin@zeppelin.com"),
+    ZEPPELIN_MAIL_SMTP_TO_ADDRESS("zeppelin.mail.smtp.to.address", "user@zeppelin.com"),
     ZEPPELIN_WEBSOCKET_MAX_TEXT_MESSAGE_SIZE("zeppelin.websocket.max.text.message.size", "1024000");
 
     private String varName;
