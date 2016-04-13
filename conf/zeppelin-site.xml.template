@@ -226,7 +226,6 @@
 </property>
 
 <property>
-<<<<<<< HEAD
   <name>zeppelin.send.mail.on.execution.error</name>
   <value>true</value>
   <description>Send email with details if any paragraph execution resulted in error</description>
