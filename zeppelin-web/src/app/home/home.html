@@ -19,7 +19,7 @@ limitations under the License.
     </div>
     <div style="margin-top: -380px;">
       <h1 class="box-heading" id="welcome">
-        Welcome to Predictive Service!
+        Welcome to Predictive Service! <small>(1.0.0)</small>
       </h1>
       <!--
       Zeppelin is web-based notebook that enables interactive data analytics.<br>
@@ -76,7 +76,7 @@ limitations under the License.
   <div ng-show="home.notebookHome" id="{{currentParagraph.id}}_paragraphColumn_main"
        ng-repeat="currentParagraph in home.note.paragraphs"
        ng-controller="ParagraphCtrl"
-       ng-Init="init(currentParagraph)"
+       ng-Init="init(currentParagraph, home.note)"
        ng-class="columnWidthClass(currentParagraph.config.colWidth)"
        class="paragraph-col">
     <div id="{{currentParagraph.id}}_paragraphColumn"
