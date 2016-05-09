@@ -44,7 +44,7 @@ abstract class RInterpreter(properties : Properties, startSpark : Boolean = true
   protected lazy val rContext : RContext = synchronized{ RContext(property, this.getInterpreterGroup().getId()) }
 
   def open: Unit = rContext.synchronized {
-    logger.trace("RInterpreter opening")
+    logger.info("RInterpreter opening")
     // We leave this as an Option[] because the pattern of nesting SparkInterpreter inside of wrapper interpreters
     // has changed several times, and this allows us to fail more gracefully and handle those changes in one place.
     val intp : Option[SparkInterpreter] =  getSparkInterpreter()
@@ -149,19 +149,19 @@ object RInterpreter {
   def processHTML(input: Array[String]): String = processHTML(input.mkString("\n"))
 
   def processHTML(input: String) : String = {
-		val doc : Document = Jsoup.parse(input)
+        val doc : Document = Jsoup.parse(input)
     processHTML(doc)
-	}
+    }
 
-	private def processHTML(doc : Document) : String = {
+    private def processHTML(doc : Document) : String = {
     val bod : Element = doc.body()
     val head : Element = doc.head()
     // Try to ignore the knitr script that breaks zeppelin display
-		head.getElementsByTag("script").reverseIterator.foreach(bod.prependChild(_))
+        head.getElementsByTag("script").reverseIterator.foreach(bod.prependChild(_))
     // Only get css from head if it links to a file
     head.getElementsByTag("link").foreach(bod.prependChild(_))
     scriptToBase(bod, "href", "link", "text/css")
     scriptToBase(bod, "src", "script", "text/javascript")
     bod.html()
-	}
+    }
 }

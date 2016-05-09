@@ -53,6 +53,7 @@ public class RRepl extends Interpreter implements WrappedInterpreter {
 
   @Override
   public void open() {
+    System.err.println("RRepl Open called");
     intp.open();
   }
 

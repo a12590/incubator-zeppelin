@@ -82,6 +82,7 @@ private[rinterpreter] class RContext(private val sockets: ScalaSockets,
   }
 
   def open(startSpark : Option[SparkInterpreter]): Unit = synchronized {
+    logge.error("Opening RContext...")
     if (isOpen && sparkRStarted) {
       logger.trace("Reusing rContext.")
       return

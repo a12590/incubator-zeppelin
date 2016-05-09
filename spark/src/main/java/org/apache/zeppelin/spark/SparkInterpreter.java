@@ -394,6 +394,7 @@ public class SparkInterpreter extends Interpreter {
   public void open() {
     URL[] urls = getClassloaderUrls();
 
+    System.err.println("Opening SparkInterpreter...");
     // Very nice discussion about how scala compiler handle classpath
     // https://groups.google.com/forum/#!topic/scala-user/MlVwo2xCCI0
 
