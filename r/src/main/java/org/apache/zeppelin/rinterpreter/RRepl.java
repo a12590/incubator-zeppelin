@@ -41,13 +41,17 @@ public class RRepl extends Interpreter implements WrappedInterpreter {
 
   public RRepl(Properties property, Boolean startSpark) {
     super(property);
+    System.err.println("RRepl Constructor 1 called");
     intp = new RReplInterpreter(property, startSpark);
   }
+
   public RRepl(Properties property) {
+    System.err.println("RRepl Constructor 2 called");
     this(property, true);
   }
 
   public RRepl() {
+    System.err.println("RRRepl Constructor 2 called");
     this(new Properties());
   }
 
